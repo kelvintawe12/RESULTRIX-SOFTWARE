@@ -135,16 +135,16 @@ const awards = [{
   name: 'Top Rated on Capterra',
   icon: TrendingUp
 }];
-const offices = [{
-  city: 'San Francisco',
-  address: 'HQ • Engineering & Product'
-}, {
-  city: 'London',
-  address: 'EMEA Sales & Support'
-}, {
-  city: 'Singapore',
-  address: 'APAC Operations'
-}];
+const offices = [
+  {
+    city: 'Cameroon',
+    address: 'Central Africa Operations'
+  },
+  {
+    city: 'Rwanda',
+    address: 'East Africa Operations'
+  }
+];
 export function AboutPage() {
   return <PublicLayout>
       {/* Hero Section */}
@@ -307,7 +307,7 @@ export function AboutPage() {
                     {item.year}
                   </div>
                   <div className="flex-1 w-full md:w-auto p-4">
-                    <Card className={`h-full hover:shadow-md transition-shadow ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'} text-center`} noPadding>
+                    <Card className={`h-full hover:shadow-md transition-shadow ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'} text-center`}>
                       <div className="p-6">
                         <h3 className="text-xl font-bold text-slate-900 mb-2">
                           {item.title}
@@ -338,7 +338,7 @@ export function AboutPage() {
           once: true
         }}>
             {values.map((value, index) => <motion.div key={index} variants={itemVariants}>
-                <Card className="h-full hover:shadow-xl transition-all duration-300 border-slate-200 group" noPadding>
+                <Card className="h-full hover:shadow-xl transition-all duration-300 border-slate-200 group">
                   <div className="p-8 text-center">
                     <div className={`w-16 h-16 mx-auto rounded-2xl ${value.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                       <value.icon className={`h-8 w-8 ${value.color}`} />
@@ -371,7 +371,7 @@ export function AboutPage() {
           once: true
         }}>
             {team.map((member, index) => <motion.div key={index} variants={itemVariants}>
-                <Card className="h-full hover:shadow-lg transition-all duration-300 border-slate-200 overflow-hidden group" noPadding>
+                <Card className="h-full hover:shadow-lg transition-all duration-300 border-slate-200 overflow-hidden group">
                   <div className="p-6">
                     <div className="flex items-center gap-4 mb-4">
                       <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold ${member.color} shadow-inner`}>

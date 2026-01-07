@@ -5,7 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { AuthSlideshow } from '../../components/common/AuthSlideshow';
-import { School, ArrowRight } from 'lucide-react';
+import { School, ArrowRight, ArrowLeft } from 'lucide-react';
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,16 +45,29 @@ export function LoginPage() {
       {/* Right Side - Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
         <div className="mx-auto w-full max-w-sm lg:w-96">
+          {/* Back Button with Tooltip */}
+          <div className="relative group mb-6">
+            <Link to="/" className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 hover:text-slate-900 transition-all duration-200">
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back Button</span>
+            </Link>
+            {/* Tooltip */}
+            <div className="absolute left-0 top-full mt-2 px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
+              Return to homepage
+              <div className="absolute left-4 -top-1.5 w-2 h-2 bg-slate-900 rotate-45"></div>
+            </div>
+          </div>
+
           {/* Logo */}
           <div className="mb-8">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="bg-blue-600 p-2 rounded-lg group-hover:bg-blue-700 transition-colors">
                 <School className="w-8 h-8 text-white" />
               </div>
-              <span className="font-bold text-2xl text-slate-900">
+              <span className="font-bold text-2xl text-slate-900 group-hover:text-blue-600 transition-colors">
                 EduMaster
               </span>
-            </div>
+            </Link>
           </div>
 
           {/* Header */}
@@ -66,7 +79,7 @@ export function LoginPage() {
           </div>
 
           {error && <div className="mb-6">
-              <Alert variant="error" title="Login Failed" message={error} />
+              <Alert type="error" title="Login Failed">{error}</Alert>
             </div>}
 
           {/* Google Sign In */}

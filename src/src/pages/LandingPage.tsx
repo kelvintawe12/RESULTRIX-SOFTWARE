@@ -76,78 +76,53 @@ const slideInRight = {
 };
 export function LandingPage() {
   const navigate = useNavigate();
-  return <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col overflow-x-hidden">
+  return <div className="min-h-screen bg-slate-900 font-sans text-white flex flex-col overflow-x-hidden">
       <Navbar />
 
       <main className="flex-grow">
-        {/* 1. HERO SECTION: Clean White Background */}
-        <section className="relative min-h-[90vh] flex items-center pt-20 overflow-hidden bg-white">
-          {/* Subtle Background Pattern */}
-          <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-
-          {/* Gradient Accents */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full blur-3xl opacity-30" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-purple-100 to-pink-100 rounded-full blur-3xl opacity-30" />
-
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
-            <motion.div className="max-w-5xl mx-auto text-center" initial="hidden" animate="visible" variants={staggerContainer}>
-              <motion.div variants={fadeInUp} className="mb-6">
-                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-medium">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
-                  </span>
-                  Trusted by 500+ Schools Across Africa
-                </span>
-              </motion.div>
-
-              <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1] text-slate-900">
+        {/* 1. HERO SECTION: Branded Dark Background */}
+        <section className="bg-slate-900 text-white py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <h1 className="text-4xl md:text-6xl font-bold mb-6">
                 School Management
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600">
-                  Made Simple
-                </span>
-              </motion.h1>
-
-              <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-                The all-in-one platform that transforms how you manage your
-                institution. From admissions to alumni, we handle the complexity
-                so you can focus on education.
-              </motion.p>
-
-              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
-                <Button size="lg" onClick={() => navigate('/signup')} className="px-10 py-6 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all">
+              </h1>
+              <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-8">
+                The all-in-one platform that transforms how you manage your institution. From admissions to alumni, we handle the complexity so you can focus on education.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4 mb-10">
+                <Button size="lg" onClick={() => navigate('/signup')} className="bg-white text-indigo-600 hover:bg-indigo-50 border-0">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button variant="outline" size="lg" onClick={() => navigate('/demo')} className="px-10 py-6 text-lg border-2 border-slate-300 hover:border-indigo-600 hover:text-indigo-600">
+                <Button size="lg" variant="outline" onClick={() => navigate('/demo')} className="border-indigo-200 text-white hover:bg-indigo-700">
                   Book a Demo
                 </Button>
-              </motion.div>
-
-              {/* Trust Indicators */}
-              <motion.div variants={fadeInUp} className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-12 border-t border-slate-200">
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-8 border-t border-indigo-400/20">
                 {[{
-                label: 'Active Schools',
-                value: '500+'
-              }, {
-                label: 'Students Managed',
-                value: '50k+'
-              }, {
-                label: 'Uptime SLA',
-                value: '99.9%'
-              }, {
-                label: 'Countries',
-                value: '12+'
-              }].map((stat, i) => <div key={i} className="text-center">
-                    <div className="text-4xl font-bold text-indigo-600 mb-1">
+                  label: 'Active Schools',
+                  value: '500+'
+                }, {
+                  label: 'Students Managed',
+                  value: '50k+'
+                }, {
+                  label: 'Uptime SLA',
+                  value: '99.9%'
+                }, {
+                  label: 'Countries',
+                  value: '12+'
+                }].map((stat, i) => (
+                  <div key={i} className="text-center">
+                    <div className="text-4xl font-bold text-indigo-400 mb-1">
                       {stat.value}
                     </div>
-                    <div className="text-sm text-slate-500 font-medium uppercase tracking-wider">
+                    <div className="text-sm text-slate-200 font-medium uppercase tracking-wider">
                       {stat.label}
                     </div>
-                  </div>)}
-              </motion.div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </div>
         </section>

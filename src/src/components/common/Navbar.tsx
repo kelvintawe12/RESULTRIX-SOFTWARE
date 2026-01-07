@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { School, Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -6,17 +6,43 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isHoveringDropdown, setIsHoveringDropdown] = useState(false);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const location = useLocation();
+
+  // Helper function to safely clear timeout
+  const clearCloseTimeout = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
+  // Helper function to set delayed close
+  const setDelayedClose = (dropdownName: string) => {
+    clearCloseTimeout();
+    closeTimeoutRef.current = setTimeout(() => {
+      if (!isHoveringDropdown) {
+        setActiveDropdown(null);
+      }
+    }, 300); // 300ms delay before closing
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearCloseTimeout();
+    };
   }, []);
+
   useEffect(() => {
     setIsOpen(false);
     setActiveDropdown(null);
+    clearCloseTimeout();
   }, [location]);
   const navLinks = [{
     name: 'Product',
@@ -57,49 +83,103 @@ export function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 p-1.5 rounded-lg group-hover:bg-blue-700 transition-colors">
+            <div className="bg-blue-600 p-1.5 rounded-lg group-hover:bg-blue-700 transition-colors shadow-md">
               <School className="w-6 h-6 text-white" />
             </div>
-            <span className={`font-bold text-xl transition-colors ${isScrolled ? 'text-slate-900' : 'text-white'}`}>
+            <span className={`font-bold text-xl tracking-tight transition-colors ${isScrolled ? 'text-slate-900' : 'text-white'}`}> 
               EduMaster
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map(link => <div key={link.name} className="relative" onMouseEnter={() => link.dropdown && setActiveDropdown(link.name)} onMouseLeave={() => setActiveDropdown(null)}>
+            {navLinks.map(link => (
+              <div
+                key={link.name}
+                className="relative group"
+                onMouseEnter={() => {
+                  if (link.dropdown) {
+                    clearCloseTimeout();
+                    setActiveDropdown(link.name);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (link.dropdown) {
+                    setDelayedClose(link.name);
+                  }
+                }}
+              >
                 {link.dropdown ? <>
-                    <button className={`flex items-center gap-1 text-sm font-medium transition-colors ${isScrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/90 hover:text-white'}`}>
-                      {link.name}
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    {activeDropdown === link.name && <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {link.dropdown.map(item => <Link key={item.path} to={item.path} className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors">
-                            {item.name}
-                          </Link>)}
-                      </div>}
-                  </> : <Link to={link.path!} className={`text-sm font-medium transition-colors ${isScrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/90 hover:text-white'}`}>
+                  <button
+                    className={`flex items-center gap-1 text-sm font-medium transition-colors px-2 py-1 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${isScrolled ? 'text-slate-800 hover:text-slate-900' : 'text-white hover:text-white'}`}
+                    aria-haspopup="true"
+                    aria-expanded={activeDropdown === link.name}
+                    tabIndex={0}
+                    onClick={e => {
+                      e.preventDefault();
+                      clearCloseTimeout();
+                      setActiveDropdown(activeDropdown === link.name ? null : link.name);
+                    }}
+                  >
                     {link.name}
-                  </Link>}
-              </div>)}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === link.name ? 'rotate-180' : ''}`} />
+                  </button>
+                  {activeDropdown === link.name && (
+                    <div
+                      className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 transition-all duration-200 z-30"
+                      onMouseEnter={() => {
+                        clearCloseTimeout();
+                        setIsHoveringDropdown(true);
+                      }}
+                      onMouseLeave={() => {
+                        setIsHoveringDropdown(false);
+                        setDelayedClose(link.name);
+                      }}
+                    >
+                      {link.dropdown.map(item => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className="block px-5 py-2 text-sm text-slate-800 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-colors font-medium"
+                          tabIndex={0}
+                          onClick={() => {
+                            clearCloseTimeout();
+                            setActiveDropdown(null);
+                          }}
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </> : (
+                  <Link
+                    to={link.path!}
+                    className={`text-sm font-medium transition-colors px-2 py-1 rounded-lg ${isScrolled ? 'text-slate-800 hover:text-slate-900 hover:bg-slate-100' : 'text-white hover:text-white'}`}
+                  >
+                    {link.name}
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
             <Link to="/login">
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" className="shadow-sm">
                 Sign In
               </Button>
             </Link>
             <Link to="/signup">
-              <Button variant="primary" size="sm">
+              <Button variant="primary" size="sm" className="shadow-md">
                 Get Started
               </Button>
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <button onClick={() => setIsOpen(!isOpen)} className={`md:hidden p-2 rounded-lg transition-colors ${isScrolled ? 'text-slate-900 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
+          <button onClick={() => setIsOpen(!isOpen)} className={`md:hidden p-2 rounded-lg transition-colors ${isScrolled ? 'text-slate-900 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}> 
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -139,3 +219,4 @@ export function Navbar() {
         </div>}
     </nav>;
 }
+

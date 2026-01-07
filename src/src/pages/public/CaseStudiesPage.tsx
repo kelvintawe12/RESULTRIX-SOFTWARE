@@ -39,29 +39,6 @@ const caseStudies = [{
 }];
 export function CaseStudiesPage() {
   return <PublicLayout>
-      {/* Hero Section */}
-      <section className="bg-slate-900 text-white py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.6
-        }}>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Success Stories
-            </h1>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-              See how leading educational institutions around the world are
-              transforming their operations with EduMaster.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Case Studies List */}
       <section className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">

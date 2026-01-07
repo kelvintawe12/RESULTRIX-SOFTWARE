@@ -62,26 +62,6 @@ const resources = [{
 }];
 export function ResourcesPage() {
   return <PublicLayout>
-      {/* Hero */}
-      <section className="bg-slate-900 text-white py-24 text-center">
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.6
-      }}>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Resources & Guides
-          </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Everything you need to get the most out of SchoolSystem.
-          </p>
-        </motion.div>
-      </section>
-
       {/* Categories */}
       <section className="border-b border-slate-200 bg-white sticky top-16 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,7 +99,7 @@ export function ResourcesPage() {
               y: 0
             }
           }}>
-                <Card className="h-full hover:shadow-lg transition-all duration-300 group cursor-pointer border-slate-200" noPadding>
+                <Card className="h-full hover:shadow-lg transition-all duration-300 group cursor-pointer border-slate-200 p-0">
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
