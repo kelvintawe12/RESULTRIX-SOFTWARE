@@ -44,7 +44,7 @@ export function DatabaseInspectorPage() {
     healthyTables: 0,
     warningTables: 0
   });
-  const tableNames = ['schools', 'users', 'students', 'teachers', 'classes', 'subjects', 'student_subjects', 'marks', 'payments', 'fee_structures', 'receipts', 'announcements', 'email_queue', 'audit_logs', 'report_templates', 'system_maintenance', 'platform_status'];
+  const tableNames = ['schools', 'users', 'students', 'guardians', 'classes', 'subjects', 'enrollments', 'teacher_assignments', 'payments', 'fee_structures', 'invoices', 'subscriptions', 'subscription_plans', 'announcements', 'email_queue', 'audit_logs', 'system_maintenance', 'platform_status'];
   useEffect(() => {
     fetchDatabaseInfo();
   }, []);

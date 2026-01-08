@@ -65,6 +65,13 @@ export function StudentAcademicRecordsPage() {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Performance summary state
+  const [performanceSummary, setPerformanceSummary] = useState<{
+    avgScore: number;
+    highest: number;
+    lowest: number;
+    status: string;
+  } | null>(null);
   // Fetch students on mount
   useEffect(() => {
     fetchStudents();
@@ -77,6 +84,23 @@ export function StudentAcademicRecordsPage() {
       fetchStudentTranscripts(selectedStudent.id);
     }
   }, [selectedStudent]);
+
+  // Calculate performance summary when sequenceMarks change
+  useEffect(() => {
+    if (!selectedStudent || sequenceMarks.length === 0) {
+      setPerformanceSummary(null);
+      return;
+    }
+    const scores = sequenceMarks.map(m => typeof m.percentage === 'number' ? m.percentage : 0);
+    const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    const highest = scores.length ? Math.max(...scores) : 0;
+    const lowest = scores.length ? Math.min(...scores) : 0;
+    let status = 'Needs Improvement';
+    if (avgScore >= 80) status = 'Excellent';
+    else if (avgScore >= 60) status = 'Good';
+    else if (avgScore >= 50) status = 'Fair';
+    setPerformanceSummary({ avgScore, highest, lowest, status });
+  }, [sequenceMarks, selectedStudent]);
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -98,7 +122,8 @@ export function StudentAcademicRecordsPage() {
         full_name: student.full_name,
         class_name: student.classes?.name,
         photo_url: student.profile_photo_path,
-        years_enrolled: student.academic_years?.year_name
+        years_enrolled: student.academic_years?.year_name,
+        overall_average: null // will be set later
       }));
       setStudents(formattedStudents);
     } catch (err: any) {
@@ -256,11 +281,19 @@ export function StudentAcademicRecordsPage() {
                     <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
                       No students found. Try adjusting your search or filters.
                     </td>
-                  </tr> : filteredStudents.map(student => <motion.tr key={student.id} initial={{
-              opacity: 0
-            }} animate={{
-              opacity: 1
-            }} className="hover:bg-slate-50 transition-colors">
+                  </tr> : filteredStudents.map(student => {
+                    // Dummy average for demo; replace with real calculation if available
+                    const avg = typeof student.overall_average === 'number' ? student.overall_average : null;
+                    let badge = null;
+                    if (avg !== null) {
+                      if (avg >= 80) badge = <span className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold">Top Performer</span>;
+                      else if (avg < 50) badge = <span className="ml-2 px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-bold">Low Performer</span>;
+                    }
+                    return <motion.tr key={student.id} initial={{
+                      opacity: 0
+                    }} animate={{
+                      opacity: 1
+                    }} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-slate-900">
                         {student.admission_number}
                       </td>
@@ -272,6 +305,7 @@ export function StudentAcademicRecordsPage() {
                           <span className="text-sm font-medium text-slate-900">
                             {student.full_name}
                           </span>
+                          {badge}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">
@@ -284,15 +318,16 @@ export function StudentAcademicRecordsPage() {
                             View Record
                           </Button>
                           <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => {
-                    setSelectedStudent(student);
-                    setActiveTab('transcripts');
-                  }}>
+                            setSelectedStudent(student);
+                            setActiveTab('transcripts');
+                          }}>
                             <FileText className="h-4 w-4 mr-1" />
                             Transcript
                           </Button>
                         </div>
                       </td>
-                    </motion.tr>)}
+                    </motion.tr>;
+                  })}
               </tbody>
             </table>
           </div>
@@ -331,6 +366,17 @@ export function StudentAcademicRecordsPage() {
                           <span>{selectedStudent.class_name}</span>
                         </>}
                     </div>
+                    {/* Performance Summary */}
+                    {performanceSummary && (
+                      <div className="mt-3 flex gap-6 text-sm">
+                        <span className={`font-semibold ${performanceSummary.avgScore >= 80 ? 'text-green-600' : performanceSummary.avgScore >= 60 ? 'text-blue-600' : performanceSummary.avgScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          Avg: {performanceSummary.avgScore.toFixed(1)}%
+                        </span>
+                        <span className="text-slate-600">High: {performanceSummary.highest.toFixed(1)}%</span>
+                        <span className="text-slate-600">Low: {performanceSummary.lowest.toFixed(1)}%</span>
+                        <span className={`px-2 py-1 rounded ${performanceSummary.status === 'Excellent' ? 'bg-green-100 text-green-700' : performanceSummary.status === 'Good' ? 'bg-blue-100 text-blue-700' : performanceSummary.status === 'Fair' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{performanceSummary.status}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => setSelectedStudent(null)}>
@@ -402,7 +448,23 @@ export function StudentAcademicRecordsPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200">
-                            {/* Sequence marks will be populated from database */}
+                            {sequenceMarks.map((mark, idx) => (
+                              <tr key={idx}>
+                                <td className="px-6 py-4 text-sm text-slate-700">{mark.year}</td>
+                                <td className="px-6 py-4 text-sm text-slate-700">{mark.term}</td>
+                                <td className="px-6 py-4 text-sm text-slate-700">{mark.sequence}</td>
+                                <td className="px-6 py-4 text-sm text-slate-700">{mark.subject}</td>
+                                <td className="px-6 py-4 text-center text-sm font-semibold"
+                                  style={{ color: mark.percentage >= 80 ? '#16a34a' : mark.percentage >= 60 ? '#2563eb' : mark.percentage >= 50 ? '#ca8a04' : '#dc2626' }}>
+                                  {mark.score}
+                                </td>
+                                <td className="px-6 py-4 text-center text-sm font-semibold"
+                                  style={{ color: mark.percentage >= 80 ? '#16a34a' : mark.percentage >= 60 ? '#2563eb' : mark.percentage >= 50 ? '#ca8a04' : '#dc2626' }}>
+                                  {mark.percentage.toFixed(1)}%
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-600">{mark.comments || ''}</td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>

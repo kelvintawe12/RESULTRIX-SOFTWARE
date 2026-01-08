@@ -96,9 +96,7 @@ export function BillingPage() {
       const {
         data: plansData,
         error: plansError
-      } = await supabase.from('subscription_plans').select('*').order('price');
-      if (plansError) throw plansError;
-      setPlans(plansData || []);
+      } = await supabase.from('subscription_plans').select('*')
       // Fetch Subscriptions
       const {
         data: subsData,
