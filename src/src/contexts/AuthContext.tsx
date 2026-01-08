@@ -1,7 +1,9 @@
-import React, { useEffect, useState, createContext, useContext } from 'react';
+import React, { useEffect, useState, createContext, useContext, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { User, UserRole } from '../types';
 import { Session } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -12,7 +14,9 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export function AuthProvider({
   children
 }: {
@@ -21,6 +25,11 @@ export function AuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  
+  // Use ref to track if we've already navigated to avoid duplicate navigations
+  const hasNavigatedRef = useRef(false);
+
   useEffect(() => {
     // Check active session
     supabase.auth.getSession().then(({
@@ -35,6 +44,7 @@ export function AuthProvider({
         setLoading(false);
       }
     });
+
     // Listen for changes
     const {
       data: {
@@ -49,8 +59,10 @@ export function AuthProvider({
         setLoading(false);
       }
     });
+
     return () => subscription.unsubscribe();
   }, []);
+
   const fetchUserProfile = async (userId: string, shouldNavigate: boolean = false) => {
     try {
       const {
@@ -69,6 +81,7 @@ export function AuthProvider({
       setLoading(false);
     }
   };
+
   const navigateByRole = (role: UserRole) => {
     // Map roles to their correct dashboard routes - MUST MATCH App.tsx routes exactly
     const routes: Record<UserRole, string> = {
@@ -79,12 +92,16 @@ export function AuthProvider({
     };
     const targetRoute = routes[role];
     const currentPath = window.location.pathname;
-    // Only navigate if we're on a login/signup page
+    // Only navigate if we're on a login/signup page and haven't already navigated
     const isAuthPage = currentPath.includes('/login') || currentPath.includes('/signup') || currentPath === '/' || currentPath.includes('/auth/callback');
-    if (targetRoute && isAuthPage) {
-      window.location.href = targetRoute;
+    
+    if (targetRoute && isAuthPage && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
+      // Use React Router's navigate for SPA navigation (no page reload)
+      navigate(targetRoute, { replace: true });
     }
   };
+
   const login = async (email: string, password: string) => {
     const {
       data,
@@ -98,6 +115,7 @@ export function AuthProvider({
       await fetchUserProfile(data.user.id, true); // Navigate after successful login
     }
   };
+
   const signup = async (email: string, password: string, schoolName: string, adminName: string) => {
     // First, create the auth user
     const {
@@ -130,9 +148,11 @@ export function AuthProvider({
         password_hash: '' // Managed by Supabase Auth
       });
       if (userError) throw userError;
-      await fetchUserProfile(authData.user.id, true); // Navigate after successful signup
+      // Don't navigate after signup - let the SignupPage handle the pending message
+      await fetchUserProfile(authData.user.id, false);
     }
   };
+
   const signInWithGoogle = async () => {
     const {
       error
@@ -144,11 +164,15 @@ export function AuthProvider({
     });
     if (error) throw error;
   };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    window.location.href = '/login';
+    hasNavigatedRef.current = false;
+    // Use React Router's navigate for SPA navigation
+    navigate('/login', { replace: true });
   };
+
   const value = {
     user,
     session,
@@ -159,8 +183,10 @@ export function AuthProvider({
     signInWithGoogle,
     signOut
   };
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -168,3 +194,4 @@ export function useAuth() {
   }
   return context;
 }
+

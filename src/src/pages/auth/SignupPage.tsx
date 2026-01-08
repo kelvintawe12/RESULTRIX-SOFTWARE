@@ -18,6 +18,8 @@ export function SignupPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPendingMessage, setShowPendingMessage] = useState(false);
+  const [registeredSchoolName, setRegisteredSchoolName] = useState('');
   const {
     signup,
     signInWithGoogle
@@ -50,7 +52,9 @@ export function SignupPage() {
     setLoading(true);
     try {
       await signup(formData.email, formData.password, formData.schoolName, formData.adminName);
-      navigate('/dashboard');
+      // Show pending approval message instead of redirecting
+      setRegisteredSchoolName(formData.schoolName);
+      setShowPendingMessage(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -64,6 +68,98 @@ export function SignupPage() {
       setError(err.message || 'Failed to sign up with Google');
     }
   };
+  
+  // Show pending approval message after successful registration
+  if (showPendingMessage) {
+    return <div className="min-h-screen flex">
+      {/* Left Side - Slideshow */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <AuthSlideshow />
+      </div>
+
+      {/* Right Side - Success Message */}
+      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+        <div className="mx-auto w-full max-w-sm lg:w-96">
+          {/* Logo */}
+          <div className="mb-8">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="bg-blue-600 p-2 rounded-lg group-hover:bg-blue-700 transition-colors">
+                <School className="w-8 h-8 text-white" />
+              </div>
+              <span className="font-bold text-2xl text-slate-900 group-hover:text-blue-600 transition-colors">
+                EduMaster
+              </span>
+            </Link>
+          </div>
+
+          {/* Success Message */}
+          <div className="text-center">
+            <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-blue-600" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Registration Successful!
+            </h2>
+            <p className="text-slate-600 mb-6">
+              Your school <strong>{registeredSchoolName}</strong> has been registered successfully.
+            </p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+              <div className="flex items-start gap-3">
+                <div className="bg-amber-100 p-1.5 rounded-full mt-0.5">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-amber-800">Pending Approval Required</h3>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Your school registration is currently pending approval by our super administrators. 
+                    You will receive an email notification once your school has been approved.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-slate-500">
+                While you wait, you can:
+              </p>
+              <div className="flex flex-col gap-2">
+                <Link 
+                  to="/" 
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Return to Homepage
+                </Link>
+                <Link 
+                  to="/login" 
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Sign In to Existing Account
+                </Link>
+              </div>
+            </div>
+
+            {/* Footer Links */}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <div className="flex justify-center gap-6 text-sm text-slate-500">
+                <Link to="/privacy-policy" className="hover:text-slate-900">
+                  Privacy Policy
+                </Link>
+                <span>•</span>
+                <Link to="/terms-of-service" className="hover:text-slate-900">
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>;
+  }
+  
   return <div className="min-h-screen flex">
       {/* Left Side - Slideshow */}
       <div className="hidden lg:block lg:w-1/2 relative">

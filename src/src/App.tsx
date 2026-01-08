@@ -484,20 +484,6 @@ function App() {
                   </DashboardLayout>
                 </RoleGuard>
               </ProtectedRoute>} />
-          <Route path="/super-admin/database-inspector" element={<ProtectedRoute>
-                <RoleGuard allowedRoles={['super_admin']}>
-                  <DashboardLayout role="super_admin">
-                    <DatabaseInspectorPage />
-                  </DashboardLayout>
-                </RoleGuard>
-              </ProtectedRoute>} />
-          <Route path="/super-admin/system-maintenance" element={<ProtectedRoute>
-                <RoleGuard allowedRoles={['super_admin']}>
-                  <DashboardLayout role="super_admin">
-                    <SystemMaintenancePage />
-                  </DashboardLayout>
-                </RoleGuard>
-              </ProtectedRoute>} />
 
           {/* Bursar Routes */}
           <Route path="/bursar" element={<ProtectedRoute>
