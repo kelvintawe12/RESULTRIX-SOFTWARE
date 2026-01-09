@@ -80,9 +80,15 @@ export function MarksReviewPage() {
     try {
       setLoading(true);
       setError('');
-      const [classesData, subjectsData, sequencesData, teachersData, marksData] = await Promise.all([supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'), supabase.from('subjects').select('id, name, coefficient').eq('school_id', user.school_id).order('name'), supabase.from('sequences').select('id, name, terms!inner(academic_year_id, academic_years!inner(school_id))').eq('terms.academic_years.school_id', user.school_id).order('name'), supabase.from('users').select('id, full_name').eq('school_id', user.school_id).eq('role', 'teacher').order('full_name'), supabase.from('marks').select('*').order('created_at', {
-        ascending: false
-      })]);
+      const [classesData, subjectsData, sequencesData, teachersData, marksData] = await Promise.all([
+        supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'),
+        supabase.from('subjects').select('id, name, coefficient').eq('school_id', user.school_id).order('name'),
+        supabase.from('sequences').select('id, name, terms!inner(academic_year_id, academic_years!inner(school_id))').eq('terms.academic_years.school_id', user.school_id).order('name'),
+        supabase.from('users').select('id, full_name').eq('school_id', user.school_id).eq('role', 'teacher').order('full_name'),
+        supabase.from('marks').select('*').eq('school_id', user.school_id).order('created_at', {
+          ascending: false
+        })
+      ]);
       if (classesData.error) throw classesData.error;
       if (subjectsData.error) throw subjectsData.error;
       if (sequencesData.error) throw sequencesData.error;

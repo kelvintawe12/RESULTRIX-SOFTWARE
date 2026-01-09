@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Tabs } from '../../components/ui/Tabs';
 import { Badge } from '../../components/ui/Badge';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../hooks/useAuth';
 interface Student {
   id: string;
   admission_number: string;
@@ -52,6 +53,7 @@ interface Transcript {
   status: string;
 }
 export function StudentAcademicRecordsPage() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
@@ -74,8 +76,10 @@ export function StudentAcademicRecordsPage() {
   } | null>(null);
   // Fetch students on mount
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    if (user?.school_id) {
+      fetchStudents();
+    }
+  }, [user?.school_id]);
   // Fetch student data when a student is selected
   useEffect(() => {
     if (selectedStudent) {
@@ -104,6 +108,13 @@ export function StudentAcademicRecordsPage() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
+      
+      if (!user?.school_id) {
+        setError('No school ID found');
+        setLoading(false);
+        return;
+      }
+      
       const {
         data,
         error
@@ -114,7 +125,7 @@ export function StudentAcademicRecordsPage() {
           profile_photo_path,
           classes (name),
           academic_years (year_name)
-        `).order('full_name');
+        `).eq('school_id', user.school_id).order('full_name');
       if (error) throw error;
       const formattedStudents: Student[] = (data || []).map((student: any) => ({
         id: student.id,
@@ -135,6 +146,8 @@ export function StudentAcademicRecordsPage() {
   };
   const fetchStudentAcademicHistory = async (studentId: string) => {
     try {
+      if (!user?.school_id) return;
+      
       const {
         data,
         error
@@ -143,7 +156,7 @@ export function StudentAcademicRecordsPage() {
           subjects (code, name),
           academic_years (year_name),
           classes (name)
-        `).eq('student_id', studentId);
+        `).eq('student_id', studentId).eq('school_id', user.school_id);
       if (error) throw error;
       setAcademicHistory([]);
     } catch (err: any) {
@@ -152,6 +165,8 @@ export function StudentAcademicRecordsPage() {
   };
   const fetchStudentSequenceMarks = async (studentId: string) => {
     try {
+      if (!user?.school_id) return;
+      
       const {
         data,
         error
@@ -161,7 +176,7 @@ export function StudentAcademicRecordsPage() {
           terms (name),
           academic_years (year_name),
           subjects (code, name)
-        `).eq('student_id', studentId).order('created_at', {
+        `).eq('student_id', studentId).eq('school_id', user.school_id).order('created_at', {
         ascending: false
       });
       if (error) throw error;
@@ -172,10 +187,12 @@ export function StudentAcademicRecordsPage() {
   };
   const fetchStudentTranscripts = async (studentId: string) => {
     try {
+      if (!user?.school_id) return;
+      
       const {
         data,
         error
-      } = await supabase.from('report_cards').select('*').eq('student_id', studentId).order('generated_at', {
+      } = await supabase.from('report_cards').select('*').eq('student_id', studentId).eq('school_id', user.school_id).order('generated_at', {
         ascending: false
       });
       if (error) throw error;

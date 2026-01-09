@@ -153,7 +153,13 @@ export function TeacherAssignmentsPage() {
     try {
       setLoading(true);
       setError('');
-      const [teachersData, subjectsData, classesData, assignmentsData, mappingsData] = await Promise.all([supabase.from('users').select('id, full_name, email, phone').eq('school_id', user.school_id).eq('role', 'teacher').order('full_name'), supabase.from('subjects').select('id, name, coefficient, subject_type').eq('school_id', user.school_id).order('name'), supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'), supabase.from('teacher_assignments').select('id, teacher_id, subject_id, class_id, status, revoked_at, revoked_by, revocation_reason, created_at'), supabase.from('subject_class_mappings').select('subject_id, class_id')]);
+      const [teachersData, subjectsData, classesData, assignmentsData, mappingsData] = await Promise.all([
+        supabase.from('users').select('id, full_name, email, phone').eq('school_id', user.school_id).eq('role', 'teacher').order('full_name'),
+        supabase.from('subjects').select('id, name, coefficient, subject_type').eq('school_id', user.school_id).order('name'),
+        supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'),
+        supabase.from('teacher_assignments').select('id, teacher_id, subject_id, class_id, status, revoked_at, revoked_by, revocation_reason, created_at').eq('school_id', user.school_id),
+        supabase.from('subject_class_mappings').select('subject_id, class_id')
+      ]);
       if (teachersData.error) throw teachersData.error;
       if (subjectsData.error) throw subjectsData.error;
       if (classesData.error) throw classesData.error;

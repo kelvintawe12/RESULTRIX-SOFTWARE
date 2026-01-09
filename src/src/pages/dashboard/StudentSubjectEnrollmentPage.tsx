@@ -120,7 +120,13 @@ export function StudentSubjectEnrollmentPage() {
     try {
       setLoading(true);
       setError('');
-      const [classesData, studentsData, subjectsData, enrollmentsData, mappingsData] = await Promise.all([supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'), supabase.from('students').select('id, full_name, admission_number, class_id').eq('school_id', user.school_id).order('full_name'), supabase.from('subjects').select('id, name, coefficient, subject_type').eq('school_id', user.school_id).order('name'), supabase.from('enrollments').select('id, student_id, subject_id, created_at'), supabase.from('subject_class_mappings').select('subject_id, class_id')]);
+      const [classesData, studentsData, subjectsData, enrollmentsData, mappingsData] = await Promise.all([
+        supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'),
+        supabase.from('students').select('id, full_name, admission_number, class_id').eq('school_id', user.school_id).order('full_name'),
+        supabase.from('subjects').select('id, name, coefficient, subject_type').eq('school_id', user.school_id).order('name'),
+        supabase.from('enrollments').select('id, student_id, subject_id, created_at').eq('school_id', user.school_id),
+        supabase.from('subject_class_mappings').select('subject_id, class_id')
+      ]);
       if (classesData.error) throw classesData.error;
       if (studentsData.error) throw studentsData.error;
       if (subjectsData.error) throw subjectsData.error;
@@ -166,7 +172,11 @@ export function StudentSubjectEnrollmentPage() {
       const {
         data,
         error
-      } = await supabase.from('enrollments').select('id, subject_id').eq('student_id', studentId);
+      } = await supabase
+        .from('enrollments')
+        .select('id, subject_id')
+        .eq('student_id', studentId)
+        .eq('school_id', user.school_id);
       if (error) throw error;
       const enrolledSubjectIds = (data || []).map(e => e.subject_id);
       setSelectedSubjects(enrolledSubjectIds);
@@ -203,7 +213,11 @@ export function StudentSubjectEnrollmentPage() {
       setLoading(true);
       const {
         data: currentEnrollments
-      } = await supabase.from('enrollments').select('id, subject_id').eq('student_id', selectedStudent);
+      } = await supabase
+        .from('enrollments')
+        .select('id, subject_id')
+        .eq('student_id', selectedStudent)
+        .eq('school_id', user.school_id);
       const currentSubjectIds = (currentEnrollments || []).map(e => e.subject_id);
       const subjectsToAdd = selectedSubjects.filter(id => !currentSubjectIds.includes(id));
       const subjectsToRemove = currentSubjectIds.filter(id => !selectedSubjects.includes(id));
@@ -222,7 +236,11 @@ export function StudentSubjectEnrollmentPage() {
         const enrollmentsToDelete = (currentEnrollments || []).filter(e => subjectsToRemove.includes(e.subject_id)).map(e => e.id);
         const {
           error: deleteError
-        } = await supabase.from('enrollments').delete().in('id', enrollmentsToDelete);
+        } = await supabase
+          .from('enrollments')
+          .delete()
+          .in('id', enrollmentsToDelete)
+          .eq('school_id', user.school_id);
         if (deleteError) throw deleteError;
       }
       setSuccess('Enrollments saved successfully');
@@ -291,7 +309,11 @@ export function StudentSubjectEnrollmentPage() {
     try {
       const {
         error
-      } = await supabase.from('enrollments').delete().eq('id', enrollmentId);
+      } = await supabase
+        .from('enrollments')
+        .delete()
+        .eq('id', enrollmentId)
+        .eq('school_id', user.school_id);
       if (error) throw error;
       setSuccess('Enrollment removed successfully');
       fetchData();

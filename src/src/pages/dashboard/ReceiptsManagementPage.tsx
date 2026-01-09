@@ -68,9 +68,14 @@ export function ReceiptsManagementPage() {
     try {
       setLoading(true);
       setError('');
-      const [schoolData, classesData, studentsData, paymentsData] = await Promise.all([supabase.from('schools').select('currency_code').eq('id', user.school_id).single(), supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'), supabase.from('students').select('id, full_name, admission_number, class_id').eq('school_id', user.school_id).order('full_name'), supabase.from('payments').select('*').order('date', {
-        ascending: false
-      })]);
+      const [schoolData, classesData, studentsData, paymentsData] = await Promise.all([
+        supabase.from('schools').select('currency_code').eq('id', user.school_id).single(),
+        supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name'),
+        supabase.from('students').select('id, full_name, admission_number, class_id').eq('school_id', user.school_id).order('full_name'),
+        supabase.from('payments').select('*').eq('school_id', user.school_id).order('date', {
+          ascending: false
+        })
+      ]);
       if (schoolData.error) throw schoolData.error;
       if (classesData.error) throw classesData.error;
       if (studentsData.error) throw studentsData.error;
