@@ -29,7 +29,14 @@ interface Subscription {
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'expired';
   current_period_start: string;
   current_period_end: string;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
+  trial_start: string | null;
+  trial_end: string | null;
+  created_at: string;
+  updated_at: string;
   schools: {
+    id: string;
     name: string;
     logo_path?: string;
   };
@@ -41,13 +48,19 @@ interface Subscription {
 }
 interface Invoice {
   id: string;
+  school_id: string;
+  subscription_id: string | null;
   number: string;
   amount: number;
+  currency: string;
   status: 'draft' | 'open' | 'paid' | 'uncollectible' | 'void';
   due_date: string;
   paid_at: string | null;
+  pdf_url: string | null;
   created_at: string;
+  updated_at: string;
   schools: {
+    id: string;
     name: string;
   };
 }
@@ -104,7 +117,7 @@ export function BillingPage() {
       } = await supabase.from('subscriptions').select(`
           *,
           schools (name, logo_path),
-          subscription_plans (name, price, interval)
+          subscription_plans:plan_id (name, price, interval)
         `).order('created_at', {
         ascending: false
       });

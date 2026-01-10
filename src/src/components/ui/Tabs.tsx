@@ -101,3 +101,7 @@ export function TabsContent({
       {children}
     </div>;
 }
+
+Tabs.List = TabsList;
+Tabs.Trigger = TabsTrigger;
+Tabs.Content = TabsContent;

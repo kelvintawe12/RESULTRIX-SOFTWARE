@@ -48,8 +48,8 @@ CREATE TABLE subscriptions (
 -- Invoices
 CREATE TABLE invoices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    school_id UUID NOT NULL REFERENCES schools(id),
-    subscription_id UUID REFERENCES subscriptions(id),
+    school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+    subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
     number VARCHAR(50) NOT NULL UNIQUE,
     amount NUMERIC(10, 2) NOT NULL,
     currency CHAR(3) DEFAULT 'USD',
