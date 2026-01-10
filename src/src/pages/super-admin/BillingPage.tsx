@@ -109,7 +109,9 @@ export function BillingPage() {
       const {
         data: plansData,
         error: plansError
-      } = await supabase.from('subscription_plans').select('*')
+      } = await supabase.from('subscription_plans').select('*');
+      if (plansError) throw plansError;
+      setPlans(plansData || []);
       // Fetch Subscriptions
       const {
         data: subsData,
@@ -187,7 +189,7 @@ export function BillingPage() {
       void: 'bg-gray-100 text-gray-600',
       uncollectible: 'bg-red-100 text-red-800'
     };
-    return <Badge className={styles[status] || 'bg-slate-100 text-slate-800'} variant="secondary">
+    return <Badge className={styles[status] || 'bg-slate-100 text-slate-800'} variant="neutral">
         {status.replace('_', ' ').toUpperCase()}
       </Badge>;
   };
@@ -212,7 +214,7 @@ export function BillingPage() {
   });
   if (loading) {
     return <div className="flex items-center justify-center min-h-[600px]">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>;
   }
   return <div className="space-y-8 pb-12">
@@ -236,7 +238,7 @@ export function BillingPage() {
         </div>
       </div>
 
-      {error && <Alert variant="error" title="Error" message={error} />}
+      {error && <Alert type="error" title="Error">{error}</Alert>}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
