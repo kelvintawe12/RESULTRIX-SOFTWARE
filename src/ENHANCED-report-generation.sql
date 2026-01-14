@@ -266,6 +266,14 @@ BEGIN
     END IF;
 
     -- Calculate rank within class
+    -- First get total students in class
+    SELECT COUNT(*)
+    INTO v_class_size
+    FROM students
+    WHERE class_id = v_student_record.class_id
+      AND school_id = v_student_record.school_id;
+
+    -- Then calculate rank among students with marks
     WITH class_averages AS (
         SELECT 
             s.id as student_id,
@@ -298,6 +306,7 @@ BEGIN
                 )
         ) marks_data ON true
         WHERE s.class_id = v_student_record.class_id
+          AND s.school_id = v_student_record.school_id
         GROUP BY s.id
     ),
     ranked AS (
@@ -308,8 +317,8 @@ BEGIN
         FROM class_averages
         WHERE weighted_avg IS NOT NULL
     )
-    SELECT rank, COUNT(*) OVER ()
-    INTO v_rank, v_class_size
+    SELECT rank
+    INTO v_rank
     FROM ranked
     WHERE student_id = p_student_id;
 

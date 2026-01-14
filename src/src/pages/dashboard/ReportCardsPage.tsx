@@ -9,10 +9,11 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/ui/Badge';
 import { Dialog } from '../../components/ui/Dialog';
 import { useAuth } from '../../hooks/useAuth';
-import { FileText, Download, Eye, Search, Filter, Award, Printer, X, Calendar } from 'lucide-react';
+import { FileText, Download, Eye, Search, Filter, Award, Printer, X, Calendar, TrendingUp, TrendingDown, BarChart3, Users, BookOpen, Target, Clock } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExport';
 import { ReportCardPreview } from '../../components/reports/ReportCardPreview';
 import { DynamicReportCard } from '../../components/reports/DynamicReportCard';
+import { BarChart, Bar, LineChart, Line, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 interface ReportCard {
   id: string;
   student_id: string;
@@ -452,178 +453,537 @@ export function ReportCardsPage() {
           </CardContent>
         </Card>}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Cards ({filteredReports.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredReports.length === 0 ? <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No report cards found</p>
-              <p className="text-gray-400 text-sm mt-2">
-                {reportCards.length === 0 ? 'Report cards will appear here once generated' : 'Try adjusting your filters'}
-              </p>
-            </div> : <div className="space-y-3">
-              {filteredReports.map(report => <div key={report.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-50 rounded-lg flex-shrink-0">
-                        <FileText className="h-5 w-5 text-indigo-600" />
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Report Cards ({filteredReports.length})</h2>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />}>
+              View Analytics
+            </Button>
+          </div>
+        </div>
+
+        {filteredReports.length === 0 ? (
+          <Card>
+            <CardContent className="py-16">
+              <div className="text-center">
+                <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Report Cards Found</h3>
+                <p className="text-gray-500 mb-6">
+                  {reportCards.length === 0 
+                    ? 'Generate report cards to see them here' 
+                    : 'Try adjusting your filters to find reports'}
+                </p>
+                {reportCards.length === 0 && (
+                  <Button 
+                    variant="primary" 
+                    onClick={() => setGenerateClassModalOpen(true)}
+                    leftIcon={<FileText className="h-4 w-4" />}
+                  >
+                    Generate Reports
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredReports.map(report => (
+              <Card key={report.id} className="hover:shadow-lg transition-all duration-200 border-2 hover:border-indigo-200">
+                <CardContent className="p-6">
+                  {/* Student Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-3 flex-shrink-0">
+                        <Award className="h-6 w-6 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-bold text-gray-900 truncate text-lg">
                           {report.student_name}
+                        </h3>
+                        <p className="text-sm text-gray-500 font-mono">
+                          {report.admission_number}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500">
-                            {report.admission_number}
-                          </span>
-                          <span className="text-gray-300">•</span>
-                          <span className="text-xs text-gray-600">
-                            {report.class_name}
-                          </span>
-                          <Badge variant="neutral">{report.scope}</Badge>
-                          {(report.sequence_name || report.term_name || report.year_name) && <span className="text-xs text-gray-600">
-                              {report.sequence_name || report.term_name || report.year_name}
-                            </span>}
-                          {report.data?.final_average && <Badge variant={report.data.final_average >= 60 ? 'success' : 'warning'}>
-                              {report.data.final_average.toFixed(1)}%
-                            </Badge>}
-                          {report.data?.rank && <div className="flex items-center gap-1">
-                              <Award className="h-3 w-3 text-amber-500" />
-                              <span className="text-xs font-medium text-amber-600">
-                                #{report.data.rank}
-                              </span>
-                            </div>}
-                        </div>
                       </div>
                     </div>
+                    <Badge 
+                      variant="neutral" 
+                      className="flex-shrink-0 text-xs font-semibold"
+                    >
+                      {report.scope.toUpperCase()}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button variant="ghost" size="sm" onClick={() => {
-                setSelectedReport(report);
-                setViewModalOpen(true);
-              }}>
-                      <Eye className="h-4 w-4" />
+
+                  {/* Class and Period Info */}
+                  <div className="space-y-2 mb-4 pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="font-medium text-gray-700">{report.class_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-600">
+                        {report.sequence_name || report.term_name || report.year_name || 'Academic Year'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Performance Metrics */}
+                  {report.data && (
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {/* Average Score */}
+                      {report.data.final_average !== undefined && (
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
+                          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
+                            Average
+                          </p>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-2xl font-bold text-blue-600">
+                              {report.data.final_average.toFixed(1)}
+                            </p>
+                            <span className="text-sm text-blue-600">%</span>
+                          </div>
+                          {report.data.letter_grade && (
+                            <Badge 
+                              variant={report.data.final_average >= 60 ? 'success' : 'danger'} 
+                              className="mt-1 text-xs"
+                            >
+                              {report.data.letter_grade}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Class Rank */}
+                      {(report.data.rank !== undefined && report.data.rank !== null) && (
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-3 border border-amber-200">
+                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                            Rank
+                          </p>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-2xl font-bold text-amber-600">
+                              #{report.data.rank}
+                            </p>
+                            <span className="text-sm text-amber-600">
+                              / {report.data.class_size}
+                            </span>
+                          </div>
+                          {report.data.rank <= 3 && (
+                            <span className="text-lg">🏆</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Attendance */}
+                      {report.data.attendance_percentage !== undefined && (
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
+                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">
+                            Attendance
+                          </p>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-2xl font-bold text-green-600">
+                              {report.data.attendance_percentage.toFixed(0)}
+                            </p>
+                            <span className="text-sm text-green-600">%</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Subjects Count */}
+                      {report.data.subjects && Array.isArray(report.data.subjects) && (
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
+                          <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">
+                            Subjects
+                          </p>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-2xl font-bold text-purple-600">
+                              {report.data.subjects.length}
+                            </p>
+                            <BookOpen className="h-4 w-4 text-purple-600" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setViewModalOpen(true);
+                      }}
+                      leftIcon={<Eye className="h-4 w-4" />}
+                      className="w-full"
+                    >
+                      View Details
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => {
-                setSelectedReport(report);
-                setTranscriptType('unofficial');
-                setPreviewModalOpen(true);
-              }} title="View Unofficial Report">
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                setSelectedReport(report);
-                setTranscriptType('official');
-                setPreviewModalOpen(true);
-              }} leftIcon={<Award className="h-4 w-4" />}>
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setTranscriptType('official');
+                        setPreviewModalOpen(true);
+                      }}
+                      leftIcon={<Award className="h-4 w-4" />}
+                      className="w-full"
+                    >
                       Official
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                setSelectedReport(report);
-                setTranscriptType('unofficial');
-                setPreviewModalOpen(true);
-                setTimeout(() => window.print(), 500);
-              }} leftIcon={<Printer className="h-4 w-4" />}>
-                      Print
-                    </Button>
                   </div>
-                </div>)}
-            </div>}
-        </CardContent>
-      </Card>
 
-      {viewModalOpen && selectedReport && <Dialog isOpen={viewModalOpen} onClose={() => {
-      setViewModalOpen(false);
-      setSelectedReport(null);
-    }} title="Report Card Details" size="lg">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Student
-                </label>
-                <p className="text-lg font-semibold text-gray-900">
-                  {selectedReport.student_name}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {selectedReport.admission_number}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Class
-                </label>
-                <p className="text-lg font-semibold text-gray-900">
-                  {selectedReport.class_name}
-                </p>
-              </div>
-            </div>
+                  {/* Quick Actions */}
+                  <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setTranscriptType('unofficial');
+                        setPreviewModalOpen(true);
+                      }}
+                      className="text-xs text-gray-600 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                    >
+                      <FileText className="h-3 w-3" />
+                      Unofficial
+                    </button>
+                    <span className="text-gray-300">•</span>
+                    <button
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setTranscriptType('unofficial');
+                        setPreviewModalOpen(true);
+                        setTimeout(() => window.print(), 500);
+                      }}
+                      className="text-xs text-gray-600 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                    >
+                      <Printer className="h-3 w-3" />
+                      Print
+                    </button>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(report.generated_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Scope
-                </label>
-                <Badge variant="neutral" className="mt-1">
-                  {selectedReport.scope}
-                </Badge>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Period
-                </label>
-                <p className="text-gray-900">
-                  {selectedReport.sequence_name || selectedReport.term_name || selectedReport.year_name || 'Academic Year'}
-                </p>
-              </div>
-            </div>
-
-            {selectedReport.data && <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-3">
-                  Performance Summary
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  {selectedReport.data.final_average && <div className="p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Average</p>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {selectedReport.data.final_average.toFixed(1)}%
-                      </p>
-                    </div>}
-                  {selectedReport.data.rank && <div className="p-3 bg-amber-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Rank</p>
-                      <p className="text-2xl font-bold text-amber-600">
-                        {selectedReport.data.rank} /{' '}
-                        {selectedReport.data.class_size || 'N/A'}
-                      </p>
-                    </div>}
-                  {selectedReport.data.attendance_percentage !== undefined && <div className="p-3 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Attendance</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {selectedReport.data.attendance_percentage.toFixed(1)}%
-                      </p>
-                    </div>}
-                  {selectedReport.data.letter_grade && <div className="p-3 bg-purple-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Grade</p>
-                      <p className="text-2xl font-bold text-purple-600">
-                        {selectedReport.data.letter_grade}
-                      </p>
-                    </div>}
+      {viewModalOpen && selectedReport && selectedReport.data && (
+        <Dialog 
+          isOpen={viewModalOpen} 
+          onClose={() => {
+            setViewModalOpen(false);
+            setSelectedReport(null);
+          }} 
+          title="" 
+          size="xl"
+        >
+          <div className="space-y-6 max-h-[85vh] overflow-y-auto">
+            {/* Header Section with Student Info */}
+            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-2xl">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                      <Award className="h-8 w-8" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white/80 uppercase tracking-wider">Student Report Card</p>
+                      <h2 className="text-3xl font-bold">{selectedReport.student_name}</h2>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 mt-4 text-white/90">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span className="font-mono text-sm">{selectedReport.admission_number}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span className="text-sm">{selectedReport.class_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span className="text-sm">{selectedReport.sequence_name || selectedReport.term_name || selectedReport.year_name}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>}
+                <div className="text-right">
+                  <Badge variant="neutral" className="bg-white/20 backdrop-blur-sm text-white border-white/30 text-base px-4 py-2">
+                    {selectedReport.scope.toUpperCase()}
+                  </Badge>
+                </div>
+              </div>
+            </div>
 
-            <div className="border-t pt-4">
-              <label className="text-sm font-medium text-gray-600">
-                Generated
-              </label>
-              <p className="text-gray-900 flex items-center gap-2 mt-1">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                {new Date(selectedReport.generated_at).toLocaleString()}
-              </p>
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-4 gap-4">
+              {/* Overall Average */}
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <Target className="h-8 w-8 opacity-80" />
+                  {selectedReport.data.final_average >= 60 ? (
+                    <TrendingUp className="h-6 w-6" />
+                  ) : (
+                    <TrendingDown className="h-6 w-6" />
+                  )}
+                </div>
+                <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Overall Average</p>
+                <p className="text-4xl font-bold mb-2">{selectedReport.data.final_average.toFixed(1)}%</p>
+                {selectedReport.data.letter_grade && (
+                  <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-semibold">
+                    Grade {selectedReport.data.letter_grade}
+                  </div>
+                )}
+              </div>
+
+              {/* Class Rank */}
+              {(selectedReport.data.rank !== undefined && selectedReport.data.rank !== null) && (
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <Award className="h-8 w-8 opacity-80" />
+                    {selectedReport.data.rank <= 3 && <span className="text-2xl">🏆</span>}
+                  </div>
+                  <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Class Ranking</p>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <p className="text-4xl font-bold">#{selectedReport.data.rank}</p>
+                    <p className="text-xl opacity-80">/ {selectedReport.data.class_size}</p>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {selectedReport.data.rank === 1 ? 'Top of Class!' : 
+                     selectedReport.data.rank <= 3 ? 'Top 3 Student' : 
+                     `Top ${Math.round((selectedReport.data.rank / selectedReport.data.class_size) * 100)}%`}
+                  </p>
+                </div>
+              )}
+
+              {/* Attendance */}
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <Clock className="h-8 w-8 opacity-80" />
+                  <span className="text-2xl">{selectedReport.data.attendance_percentage >= 90 ? '✓' : '!'}</span>
+                </div>
+                <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Attendance</p>
+                <p className="text-4xl font-bold mb-2">{selectedReport.data.attendance_percentage.toFixed(1)}%</p>
+                {selectedReport.data.attendance_present !== undefined && selectedReport.data.attendance_total !== undefined && (
+                  <p className="text-sm opacity-90">
+                    {selectedReport.data.attendance_present} / {selectedReport.data.attendance_total} days
+                  </p>
+                )}
+              </div>
+
+              {/* Total Subjects */}
+              {selectedReport.data.subjects && Array.isArray(selectedReport.data.subjects) && (
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <BookOpen className="h-8 w-8 opacity-80" />
+                  </div>
+                  <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Subjects</p>
+                  <p className="text-4xl font-bold mb-2">{selectedReport.data.subjects.length}</p>
+                  <p className="text-sm opacity-90">Enrolled courses</p>
+                </div>
+              )}
+            </div>
+
+            {/* Charts Section */}
+            {selectedReport.data.subjects && Array.isArray(selectedReport.data.subjects) && selectedReport.data.subjects.length > 0 && (
+              <div className="grid grid-cols-2 gap-6">
+                {/* Subject Performance Bar Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                      Subject Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={selectedReport.data.subjects.map((subj: any) => ({
+                        name: subj.subject_name.length > 15 ? subj.subject_name.substring(0, 15) + '...' : subj.subject_name,
+                        score: subj.total_out_of > 0 ? ((subj.total_score / subj.total_out_of) * 100).toFixed(1) : 0
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={11} />
+                        <YAxis domain={[0, 100]} />
+                        <Tooltip />
+                        <Bar dataKey="score" fill="#3b82f6" name="Score %" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Subject Type Distribution */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Target className="h-5 w-5 text-green-600" />
+                      Core vs Elective Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RechartsPie>
+                        <Pie
+                          data={[
+                            {
+                              name: 'Core Subjects',
+                              value: selectedReport.data.subjects.filter((s: any) => s.subject_type === 'core').length,
+                              color: '#10b981'
+                            },
+                            {
+                              name: 'Elective Subjects',
+                              value: selectedReport.data.subjects.filter((s: any) => s.subject_type === 'elective').length,
+                              color: '#3b82f6'
+                            }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {[{ color: '#10b981' }, { color: '#3b82f6' }].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Subjects Table */}
+            {selectedReport.data.subjects && Array.isArray(selectedReport.data.subjects) && selectedReport.data.subjects.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BookOpen className="h-5 w-5 text-purple-600" />
+                    Subject Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-200">
+                          <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Subject</th>
+                          <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Type</th>
+                          <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Coefficient</th>
+                          <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Score</th>
+                          <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Percentage</th>
+                          <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedReport.data.subjects.map((subject: any, index: number) => {
+                          const percentage = subject.total_out_of > 0 ? ((subject.total_score / subject.total_out_of) * 100) : 0;
+                          return (
+                            <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                              <td className="py-3 px-4 font-medium text-gray-900">{subject.subject_name}</td>
+                              <td className="py-3 px-4 text-center">
+                                <Badge variant={subject.subject_type === 'core' ? 'success' : 'info'} className="text-xs">
+                                  {subject.subject_type}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-center font-semibold text-gray-700">{subject.coefficient}</td>
+                              <td className="py-3 px-4 text-center font-mono text-gray-900">
+                                {subject.total_score} / {subject.total_out_of}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`font-bold ${percentage >= 60 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {percentage.toFixed(1)}%
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <Badge variant={percentage >= 60 ? 'success' : 'danger'}>
+                                  {subject.letter_grade || 'N/A'}
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Comments Section */}
+            {selectedReport.data.teacher_comments && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <FileText className="h-5 w-5 text-indigo-600" />
+                    Teacher's Comments
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 leading-relaxed italic bg-gray-50 p-4 rounded-lg border-l-4 border-indigo-500">
+                    "{selectedReport.data.teacher_comments}"
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Footer with Actions */}
+            <div className="flex items-center justify-between pt-6 border-t-2 border-gray-200">
+              <div className="text-sm text-gray-600">
+                <p className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Generated: {new Date(selectedReport.generated_at).toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    setSelectedReport(null);
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    setTranscriptType('unofficial');
+                    setPreviewModalOpen(true);
+                  }}
+                  leftIcon={<FileText className="h-4 w-4" />}
+                >
+                  View Full Report
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    setTranscriptType('official');
+                    setPreviewModalOpen(true);
+                  }}
+                  leftIcon={<Award className="h-4 w-4" />}
+                >
+                  Official Transcript
+                </Button>
+              </div>
             </div>
           </div>
-        </Dialog>}
+        </Dialog>
+      )}
 
       {/* Generate Class Reports Modal */}
       {generateClassModalOpen && (
