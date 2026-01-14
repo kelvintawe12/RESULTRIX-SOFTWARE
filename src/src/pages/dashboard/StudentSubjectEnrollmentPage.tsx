@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -10,8 +10,9 @@ import { Checkbox } from '../../components/ui/Checkbox';
 import { Badge } from '../../components/ui/Badge';
 import { Dialog } from '../../components/ui/Dialog';
 import { useAuth } from '../../hooks/useAuth';
-import { GraduationCap, BookOpen, Search, Download, Eye, Plus, Trash2, Filter, AlertTriangle } from 'lucide-react';
+import { GraduationCap, BookOpen, Search, Download, Eye, Plus, Trash2, Filter, AlertTriangle, Edit, Grid, List, Users, BookMarked, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExport';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 interface Student {
   id: string;
   full_name: string;
@@ -47,29 +48,37 @@ export function StudentSubjectEnrollmentPage() {
   const [classes, setClasses] = useState<any[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [subjectClassMappings, setSubjectClassMappings] = useState<SubjectClassMapping[]>([]);
-  const [filteredEnrollments, setFilteredEnrollments] = useState<Enrollment[]>([]);
+  
   // Single Enrollment State
   const [selectedStudent, setSelectedStudent] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [enrollClassFilter, setEnrollClassFilter] = useState('');
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  
   // Bulk Enrollment State
   const [bulkStudents, setBulkStudents] = useState<string[]>([]);
   const [bulkSubjects, setBulkSubjects] = useState<string[]>([]);
   const [bulkClassFilter, setBulkClassFilter] = useState('');
   const [bulkAvailableSubjects, setBulkAvailableSubjects] = useState<Subject[]>([]);
+  
   // Page Filters
+  const [filterClass, setFilterClass] = useState('');
   const [filterStudent, setFilterStudent] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
   // Modals
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [selectedClassName, setSelectedClassName] = useState('');
   const [stats, setStats] = useState({
     totalEnrollments: 0,
     totalStudents: 0,
@@ -80,9 +89,6 @@ export function StudentSubjectEnrollmentPage() {
       fetchData();
     }
   }, [user]);
-  useEffect(() => {
-    applyFilters();
-  }, [enrollments, filterStudent, filterSubject, searchQuery]);
   // Update available subjects when a student is selected (Single Enroll)
   useEffect(() => {
     if (selectedStudent) {
@@ -185,16 +191,75 @@ export function StudentSubjectEnrollmentPage() {
       // Don't set global error here to avoid disrupting the UI flow
     }
   };
-  const applyFilters = () => {
+  // Compute filtered enrollments
+  const filteredEnrollments = useMemo(() => {
     let filtered = [...enrollments];
-    if (filterStudent) filtered = filtered.filter(e => e.student_id === filterStudent);
-    if (filterSubject) filtered = filtered.filter(e => e.subject_id === filterSubject);
+    
+    // Filter by class (through student)
+    if (filterClass) {
+      const studentIdsInClass = students
+        .filter(s => s.class_id === filterClass)
+        .map(s => s.id);
+      filtered = filtered.filter(e => studentIdsInClass.includes(e.student_id));
+    }
+    
+    if (filterStudent) {
+      filtered = filtered.filter(e => e.student_id === filterStudent);
+    }
+    
+    if (filterSubject) {
+      filtered = filtered.filter(e => e.subject_id === filterSubject);
+    }
+    
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(e => e.student_name.toLowerCase().includes(query) || e.subject_name.toLowerCase().includes(query));
+      filtered = filtered.filter(e => 
+        e.student_name.toLowerCase().includes(query) || 
+        e.subject_name.toLowerCase().includes(query)
+      );
     }
-    setFilteredEnrollments(filtered);
+    
+    return filtered;
+  }, [enrollments, students, filterClass, filterStudent, filterSubject, searchQuery]);
+
+  // Compute grouped students by class
+  const groupedStudents = useMemo(() => {
+    let filtered = [...students];
+
+    // Apply class filter
+    if (filterClass) {
+      filtered = filtered.filter(s => s.class_id === filterClass);
+    }
+
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.full_name.toLowerCase().includes(query) || 
+        s.admission_number.toLowerCase().includes(query)
+      );
+    }
+
+    // Group by class name
+    const grouped: Record<string, Student[]> = {};
+    filtered.forEach(student => {
+      const className = student.class_name || 'Unknown';
+      if (!grouped[className]) {
+        grouped[className] = [];
+      }
+      grouped[className].push(student);
+    });
+
+    return grouped;
+  }, [students, filterClass, searchQuery]);
+
+  // Open class modal
+  const openClassModal = (className: string) => {
+    setSelectedClassName(className);
+    setClassModalOpen(true);
   };
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'];
   const handleSubjectToggle = (subjectId: string, isBulk = false) => {
     if (isBulk) {
       setBulkSubjects(prev => prev.includes(subjectId) ? prev.filter(id => id !== subjectId) : [...prev, subjectId]);
@@ -442,95 +507,190 @@ export function StudentSubjectEnrollmentPage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* School-Wide Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Enrollments Per Class Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Enrollments by Class
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={Object.entries(groupedStudents).map(([className, students]) => ({
+                name: className,
+                students: students.length,
+                enrollments: enrollments.filter(e => students.some(s => s.id === e.student_id)).length
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
+                <YAxis fontSize={11} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="students" fill="#8b5cf6" name="Students" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="enrollments" fill="#3b82f6" name="Enrollments" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Core vs Elective Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <PieChartIcon className="h-5 w-5 text-green-600" />
+              Subject Type Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Core Subjects', value: enrollments.filter(e => e.subject_type === 'core').length, color: '#10b981' },
+                    { name: 'Elective Subjects', value: enrollments.filter(e => e.subject_type === 'elective').length, color: '#3b82f6' }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {[
+                    { name: 'Core Subjects', value: enrollments.filter(e => e.subject_type === 'core').length, color: '#10b981' },
+                    { name: 'Elective Subjects', value: enrollments.filter(e => e.subject_type === 'elective').length, color: '#3b82f6' }
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters and View Toggle */}
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input placeholder="Search enrollments..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+              <Input placeholder="Search students by name or admission number..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
 
-            <Select value={filterStudent} onValueChange={setFilterStudent}>
+            <Select value={filterClass} onValueChange={setFilterClass}>
               <SelectTrigger>
-                <SelectValue placeholder="Filter by Student" />
+                <SelectValue placeholder="Filter by Class" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Students</SelectItem>
-                {students.map(student => <SelectItem key={student.id} value={student.id}>
-                    {student.full_name}
+                <SelectItem value="">All Classes</SelectItem>
+                {classes.map(cls => <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name}
                   </SelectItem>)}
               </SelectContent>
             </Select>
 
-            <Select value={filterSubject} onValueChange={setFilterSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by Subject" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Subjects</SelectItem>
-                {subjects.map(subject => <SelectItem key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 justify-end">
+              <span className="text-sm text-gray-600 mr-2">View:</span>
+              <Button
+                variant={viewMode === 'card' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('card')}
+                leftIcon={<Grid className="h-4 w-4" />}
+              >
+                Card
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                leftIcon={<List className="h-4 w-4" />}
+              >
+                List
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Enrollment List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">
-            Current Enrollments ({filteredEnrollments.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredEnrollments.length === 0 ? <div className="text-center py-12">
-              <GraduationCap className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 text-base sm:text-lg">
-                No enrollments found
-              </p>
-              <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                {enrollments.length === 0 ? 'Enroll students in subjects to get started' : 'Try adjusting your filters'}
-              </p>
-            </div> : <div className="space-y-3">
-              {filteredEnrollments.map(enrollment => <div key={enrollment.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-50 rounded-lg flex-shrink-0">
-                        <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">
-                          {enrollment.student_name}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-xs sm:text-sm text-gray-600 truncate">
-                            {enrollment.subject_name}
-                          </span>
-                          <Badge variant={enrollment.subject_type === 'core' ? 'success' : 'neutral'} className="text-xs">
-                            {enrollment.subject_type}
-                          </Badge>
+      {/* Enrollment List - Grouped by Class */}
+      <div className={viewMode === 'card' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+        {Object.keys(groupedStudents).length > 0 ? (
+          Object.entries(groupedStudents).map(([className, studentsInClass]) => {
+            const totalEnrollments = enrollments.filter(e => 
+              studentsInClass.some(s => s.id === e.student_id)
+            ).length;
+            const coreCount = enrollments.filter(e => 
+              studentsInClass.some(s => s.id === e.student_id) && e.subject_type === 'core'
+            ).length;
+            const electiveCount = enrollments.filter(e => 
+              studentsInClass.some(s => s.id === e.student_id) && e.subject_type === 'elective'
+            ).length;
+
+            return (
+              <div key={className} onClick={() => openClassModal(className)} className="cursor-pointer">
+                <Card className={`${viewMode === 'card' ? 'hover:shadow-lg' : ''} hover:bg-gray-50 transition-all`}>
+                  <CardHeader className={viewMode === 'card' ? 'pb-3' : ''}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <CardTitle className="flex items-center gap-2 text-lg mb-2">
+                        <GraduationCap className="h-5 w-5 text-indigo-600" />
+                        {className}
+                      </CardTitle>
+                      {viewMode === 'card' && (
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Users className="h-4 w-4 text-blue-600" />
+                            <span className="text-gray-600">{studentsInClass.length} Students</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <BookMarked className="h-4 w-4 text-green-600" />
+                            <span className="text-gray-600">{totalEnrollments} Enrollments</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span className="text-gray-600">{coreCount} Core</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span className="text-gray-600">{electiveCount} Elective</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {viewMode === 'list' && (
+                        <div className="flex items-center gap-4 mt-2">
+                          <Badge variant="neutral">{studentsInClass.length} Students</Badge>
+                          <Badge variant="info">{totalEnrollments} Enrollments</Badge>
+                          <span className="text-sm text-gray-500">{coreCount} Core • {electiveCount} Elective</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
-                    <Button variant="ghost" size="sm" onClick={() => {
-                setSelectedEnrollment(enrollment);
-                setViewModalOpen(true);
-              }}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleRemoveEnrollment(enrollment.id)}>
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                </div>)}
-            </div>}
-        </CardContent>
-      </Card>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-gray-400" />
+                    </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </div>
+            );
+          })
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12">
+              <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">No students found</p>
+              <p className="text-gray-400 text-sm mt-2">
+                {students.length === 0 ? 'Add students to get started' : 'Try adjusting your filters'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Single Enroll Modal */}
       <Dialog isOpen={showEnrollModal} onClose={() => setShowEnrollModal(false)} title="Enroll Student in Subjects">
@@ -726,6 +886,178 @@ export function StudentSubjectEnrollmentPage() {
           </div>
         </div>
       </Dialog>
+
+      {/* Class Details Modal */}
+      {classModalOpen && selectedClassName && (() => {
+        const classStudents = groupedStudents[selectedClassName] || [];
+        const classEnrollments = enrollments.filter(e => 
+          classStudents.some(s => s.id === e.student_id)
+        );
+        const coreEnrollments = classEnrollments.filter(e => e.subject_type === 'core').length;
+        const electiveEnrollments = classEnrollments.filter(e => e.subject_type === 'elective').length;
+        
+        // Subject distribution for this class
+        const subjectCounts: Record<string, number> = {};
+        classEnrollments.forEach(e => {
+          subjectCounts[e.subject_name] = (subjectCounts[e.subject_name] || 0) + 1;
+        });
+        const subjectData = Object.entries(subjectCounts)
+          .map(([name, count]) => ({ name, students: count }))
+          .sort((a, b) => b.students - a.students);
+
+        return (
+          <Dialog
+            isOpen={classModalOpen}
+            onClose={() => {
+              setClassModalOpen(false);
+              setSelectedClassName('');
+            }}
+            title={`${selectedClassName} - Class Analytics`}
+            size="xl"
+          >
+            <div className="space-y-6 max-h-[80vh] overflow-y-auto">
+              {/* Class Statistics */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Students</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{classStudents.length}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Core</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{coreEnrollments}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-purple-500">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Elective</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{electiveEnrollments}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Subject Distribution Bar Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-blue-600" />
+                      Subject Enrollment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={subjectData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis type="number" fontSize={10} />
+                        <YAxis dataKey="name" type="category" width={100} fontSize={10} />
+                        <Tooltip />
+                        <Bar dataKey="students" fill="#3b82f6" name="Students" radius={[0, 4, 4, 0]}>
+                          {subjectData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Core vs Elective Pie Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <PieChartIcon className="h-4 w-4 text-green-600" />
+                      Core vs Elective
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Core', value: coreEnrollments, color: '#10b981' },
+                            { name: 'Elective', value: electiveEnrollments, color: '#3b82f6' }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={60}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          <Cell fill="#10b981" />
+                          <Cell fill="#3b82f6" />
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Students List */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Students in {selectedClassName}
+                </h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {classStudents.map(student => {
+                    const studentEnrollments = enrollments.filter(e => e.student_id === student.id);
+                    return (
+                      <div key={student.id} className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-semibold text-gray-900">{student.full_name}</p>
+                            <p className="text-xs text-gray-500 font-mono">{student.admission_number}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="info">{studentEnrollments.length} Subjects</Badge>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedStudent(student.id);
+                                setClassModalOpen(false);
+                                setShowEnrollModal(true);
+                              }} 
+                              leftIcon={<Edit className="h-4 w-4" />}
+                            >
+                              Manage
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-dashed">
+                          <div className="flex flex-wrap gap-2">
+                            {studentEnrollments.map(enrollment => (
+                              <Badge 
+                                key={enrollment.id} 
+                                variant={enrollment.subject_type === 'core' ? 'success' : 'info'}
+                              >
+                                {enrollment.subject_name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </Dialog>
+        );
+      })()}
 
       {/* View Details Modal - Professional & Sophisticated */}
       {viewModalOpen && selectedEnrollment && (

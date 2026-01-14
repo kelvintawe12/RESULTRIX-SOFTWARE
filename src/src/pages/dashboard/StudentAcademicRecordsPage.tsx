@@ -265,10 +265,13 @@ export function StudentAcademicRecordsPage() {
   const fetchTerms = async () => {
     try {
       if (!user?.school_id) return;
-      // Only fetch terms for the current school
-      const { data, error } = await supabase.from('terms').select('id, name, academic_year_id').in('academic_year_id',
-        (await supabase.from('academic_years').select('id').eq('school_id', user.school_id)).data?.map(y => y.id) || []
-      ).order('name');
+      // Join with academic_years to filter by school_id
+      const { data, error } = await supabase
+        .from('terms')
+        .select('id, name, academic_year_id, academic_years!inner(school_id)')
+        .eq('academic_years.school_id', user.school_id)
+        .order('name');
+
       if (error) throw error;
       setTerms(data || []);
     } catch (err) {
@@ -279,6 +282,7 @@ export function StudentAcademicRecordsPage() {
   // Fetch classes
   const fetchClasses = async () => {
     try {
+      if (!user || !user.school_id) return;
       const { data, error } = await supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name');
       if (error) throw error;
       setClasses(data || []);
