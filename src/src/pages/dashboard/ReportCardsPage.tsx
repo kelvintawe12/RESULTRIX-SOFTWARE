@@ -19,6 +19,9 @@ interface ReportCard {
   admission_number: string;
   class_name: string;
   scope: 'sequence' | 'term' | 'year';
+  sequence_id?: string;
+  term_id?: string;
+  academic_year_id?: string;
   sequence_name?: string;
   term_name?: string;
   year_name?: string;
@@ -200,7 +203,7 @@ export function ReportCardsPage() {
   };
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner className="w-12 h-12" />
       </div>;
   }
   return <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
@@ -219,8 +222,8 @@ export function ReportCardsPage() {
         </div>
       </div>
 
-      {error && <Alert variant="error" title="Error" message={error} onClose={() => setError('')} />}
-      {success && <Alert variant="success" title="Success" message={success} onClose={() => setSuccess('')} />}
+      {error && <Alert type="error" title="Error">{error}</Alert>}
+      {success && <Alert type="success" title="Success">{success}</Alert>}
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="border-l-4 border-l-blue-500">
@@ -386,11 +389,11 @@ export function ReportCardsPage() {
                           <span className="text-xs text-gray-600">
                             {report.class_name}
                           </span>
-                          <Badge variant="secondary">{report.scope}</Badge>
+                          <Badge variant="neutral">{report.scope}</Badge>
                           {(report.sequence_name || report.term_name || report.year_name) && <span className="text-xs text-gray-600">
                               {report.sequence_name || report.term_name || report.year_name}
                             </span>}
-                          {report.data?.final_average && <Badge variant={report.data.final_average >= 60 ? 'default' : 'secondary'}>
+                          {report.data?.final_average && <Badge variant={report.data.final_average >= 60 ? 'success' : 'warning'}>
                               {report.data.final_average.toFixed(1)}%
                             </Badge>}
                           {report.data?.rank && <div className="flex items-center gap-1">
@@ -457,7 +460,7 @@ export function ReportCardsPage() {
                 <label className="text-sm font-medium text-gray-600">
                   Scope
                 </label>
-                <Badge variant="secondary" className="mt-1">
+                <Badge variant="neutral" className="mt-1">
                   {selectedReport.scope}
                 </Badge>
               </div>
@@ -519,7 +522,7 @@ export function ReportCardsPage() {
       {previewModalOpen && selectedReport && school && <Dialog isOpen={previewModalOpen} onClose={() => {
       setPreviewModalOpen(false);
       setSelectedReport(null);
-    }} title="Report Card Preview" size="full">
+    }} title="Report Card Preview" size="xl">
           <div ref={printRef} className="print:p-0">
             <ReportCardPreview student={{
           full_name: selectedReport.student_name,
