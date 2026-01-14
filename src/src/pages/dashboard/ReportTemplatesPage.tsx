@@ -52,6 +52,7 @@ interface ReportTemplate {
 }
 
 export function ReportTemplatesPage() {
+    const [showDefaultTemplates, setShowDefaultTemplates] = useState(false);
   const { user } = useAuth();
   const [defaultTemplates, setDefaultTemplates] = useState<ReportTemplate[]>([]);
   const [customTemplates, setCustomTemplates] = useState<ReportTemplate[]>([]);
@@ -1139,31 +1140,43 @@ export function ReportTemplatesPage() {
         </Card>
       )}
 
-      {/* Default Templates Section */}
+      {/* Toggle Default Templates Section */}
       {defaultTemplates.length > 0 && (
-        <div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <Star className="h-6 w-6 text-amber-600" />
-            </div>
+        <div className="mb-6">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowDefaultTemplates((v) => !v)}
+            className="mb-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none"
+          >
+            {showDefaultTemplates ? 'Hide Default Templates' : 'Show Default Templates'}
+          </Button>
+          {showDefaultTemplates && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Default Templates
-              </h2>
-              <p className="text-sm text-gray-500">
-                Professional templates ready to use
-              </p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Star className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Default Templates
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Professional templates ready to use
+                  </p>
+                </div>
+                <Badge variant="info" className="ml-auto text-base px-3 py-1">
+                  {defaultTemplates.length}
+                </Badge>
+              </div>
+              <div className={viewMode === 'grid' 
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 lg:gap-8' 
+                : 'space-y-4'
+              }>
+                {defaultTemplates.map((template) => renderTemplateCard(template, true))}
+              </div>
             </div>
-            <Badge variant="info" className="ml-auto text-base px-3 py-1">
-              {defaultTemplates.length}
-            </Badge>
-          </div>
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 lg:gap-8' 
-            : 'space-y-4'
-          }>
-            {defaultTemplates.map((template) => renderTemplateCard(template, true))}
-          </div>
+          )}
         </div>
       )}
 

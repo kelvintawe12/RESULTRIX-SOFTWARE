@@ -273,6 +273,49 @@ export function EnhancedTemplatePreview({
           )}
         </div>
 
+        {/* Guardian Info - Tabular Sectioned Layout with Divisions */}
+        <div className="mb-6">
+          <div className="border rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-gray-100 px-4 py-2 border-b">
+              <h3 className="font-semibold text-base" style={{ color: template.color_scheme?.primary }}>
+                Guardian Details
+              </h3>
+            </div>
+            <table className="min-w-full bg-white text-sm">
+              <tbody>
+                {/* Identity Section */}
+                <tr className="bg-gray-50">
+                  <td colSpan={4} className="px-4 py-2 font-semibold text-gray-800 border-b border-gray-200">Identity</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="px-4 py-2 font-medium text-gray-700 w-1/4">Name</td>
+                  <td className="px-4 py-2">Jane Doe</td>
+                  <td className="px-4 py-2 font-medium text-gray-700 w-1/4">Relationship</td>
+                  <td className="px-4 py-2">Mother</td>
+                </tr>
+                {/* Contact Section */}
+                <tr className="bg-gray-50">
+                  <td colSpan={4} className="px-4 py-2 font-semibold text-gray-800 border-b border-gray-200">Contact</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="px-4 py-2 font-medium text-gray-700">Phone</td>
+                  <td className="px-4 py-2">+1 555-123-4567</td>
+                  <td className="px-4 py-2 font-medium text-gray-700">Email</td>
+                  <td className="px-4 py-2">jane.doe@email.com</td>
+                </tr>
+                {/* Address Section */}
+                <tr className="bg-gray-50">
+                  <td colSpan={4} className="px-4 py-2 font-semibold text-gray-800 border-b border-gray-200">Address</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2 font-medium text-gray-700">Address</td>
+                  <td className="px-4 py-2" colSpan={3}>123 Main St, Springfield</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Subjects Table */}
         <div className="mb-4">
           <h3 
