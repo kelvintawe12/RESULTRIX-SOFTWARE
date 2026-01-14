@@ -174,7 +174,7 @@ export function ReportCardPreview({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Badge variant={subject.percentage >= 60 ? 'default' : 'secondary'}>
+                      <Badge variant={subject.percentage >= 60 ? 'success' : 'warning'}>
                         {getGradeLetter(subject.percentage)}
                       </Badge>
                     </td>

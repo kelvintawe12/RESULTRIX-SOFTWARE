@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { FileText, Download, Eye, Search, Filter, Award, Printer, X, Calendar } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExport';
 import { ReportCardPreview } from '../../components/reports/ReportCardPreview';
+import { DynamicReportCard } from '../../components/reports/DynamicReportCard';
 interface ReportCard {
   id: string;
   student_id: string;
@@ -58,6 +59,12 @@ export function ReportCardsPage() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportCard | null>(null);
+  const [transcriptType, setTranscriptType] = useState<'official' | 'unofficial'>('unofficial');
+  const [generateClassModalOpen, setGenerateClassModalOpen] = useState(false);
+  const [selectedClassForGeneration, setSelectedClassForGeneration] = useState('');
+  const [selectedScopeForGeneration, setSelectedScopeForGeneration] = useState<'sequence' | 'term' | 'year'>('sequence');
+  const [selectedPeriodForGeneration, setSelectedPeriodForGeneration] = useState('');
+  const [generating, setGenerating] = useState(false);
   const [stats, setStats] = useState({
     totalReports: 0,
     sequenceReports: 0,
@@ -201,6 +208,89 @@ export function ReportCardsPage() {
     }));
     downloadCSV(exportData, `report_cards_${new Date().toISOString().split('T')[0]}.csv`);
   };
+
+  const handleGenerateClassReports = async () => {
+    if (!selectedClassForGeneration || !selectedPeriodForGeneration || !user?.school_id) {
+      setError('Please select a class and period');
+      return;
+    }
+
+    try {
+      setGenerating(true);
+      setError('');
+      setSuccess('');
+
+      // Fetch all students in the selected class
+      const { data: students, error: studentsError } = await supabase
+        .from('students')
+        .select('id, full_name')
+        .eq('class_id', selectedClassForGeneration)
+        .eq('school_id', user.school_id);
+
+      if (studentsError) throw studentsError;
+
+      if (!students || students.length === 0) {
+        setError('No students found in the selected class');
+        setGenerating(false);
+        return;
+      }
+
+      // Call the SQL function for each student
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const student of students) {
+        try {
+          const params: any = { p_student_id: student.id };
+          
+          if (selectedScopeForGeneration === 'sequence') {
+            params.p_sequence_id = selectedPeriodForGeneration;
+          } else if (selectedScopeForGeneration === 'term') {
+            params.p_term_id = selectedPeriodForGeneration;
+          } else if (selectedScopeForGeneration === 'year') {
+            params.p_academic_year_id = selectedPeriodForGeneration;
+          }
+
+          const { error: generateError } = await supabase.rpc('compute_student_report', params);
+
+          if (generateError) {
+            console.error(`Error generating report for ${student.full_name}:`, generateError);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Error generating report for ${student.full_name}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        setSuccess(`Successfully generated ${successCount} report(s)${errorCount > 0 ? `. ${errorCount} failed.` : '!'}`);
+        // Refresh the report cards list
+        await fetchData();
+      } else {
+        setError(`Failed to generate reports. ${errorCount} error(s) occurred.`);
+      }
+
+      setGenerateClassModalOpen(false);
+      setSelectedClassForGeneration('');
+      setSelectedScopeForGeneration('sequence');
+      setSelectedPeriodForGeneration('');
+    } catch (err: any) {
+      console.error('Error generating class reports:', err);
+      setError(err.message || 'Failed to generate class reports');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const getPeriodsForScope = () => {
+    if (selectedScopeForGeneration === 'sequence') return sequences;
+    if (selectedScopeForGeneration === 'term') return terms;
+    if (selectedScopeForGeneration === 'year') return academicYears;
+    return [];
+  };
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner className="w-12 h-12" />
@@ -213,6 +303,9 @@ export function ReportCardsPage() {
           <p className="text-gray-500">View and manage student report cards</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="primary" onClick={() => setGenerateClassModalOpen(true)} leftIcon={<FileText className="h-4 w-4" />}>
+            Generate Class Reports
+          </Button>
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} leftIcon={<Filter className="h-4 w-4" />}>
             {showFilters ? 'Hide' : 'Show'} Filters
           </Button>
@@ -415,11 +508,24 @@ export function ReportCardsPage() {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => {
                 setSelectedReport(report);
+                setTranscriptType('unofficial');
                 setPreviewModalOpen(true);
-              }}>
+              }} title="View Unofficial Report">
                       <FileText className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePrint(report)} leftIcon={<Printer className="h-4 w-4" />}>
+                    <Button variant="outline" size="sm" onClick={() => {
+                setSelectedReport(report);
+                setTranscriptType('official');
+                setPreviewModalOpen(true);
+              }} leftIcon={<Award className="h-4 w-4" />}>
+                      Official
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                setSelectedReport(report);
+                setTranscriptType('unofficial');
+                setPreviewModalOpen(true);
+                setTimeout(() => window.print(), 500);
+              }} leftIcon={<Printer className="h-4 w-4" />}>
                       Print
                     </Button>
                   </div>
@@ -519,23 +625,155 @@ export function ReportCardsPage() {
           </div>
         </Dialog>}
 
+      {/* Generate Class Reports Modal */}
+      {generateClassModalOpen && (
+        <Dialog
+          isOpen={generateClassModalOpen}
+          onClose={() => {
+            setGenerateClassModalOpen(false);
+            setSelectedClassForGeneration('');
+            setSelectedScopeForGeneration('sequence');
+            setSelectedPeriodForGeneration('');
+          }}
+          title="Generate Class Reports"
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Generate report cards for all students in a class for a specific period.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Class *
+              </label>
+              <Select value={selectedClassForGeneration} onValueChange={setSelectedClassForGeneration}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map(cls => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Report Scope *
+              </label>
+              <Select 
+                value={selectedScopeForGeneration} 
+                onValueChange={(value: any) => {
+                  setSelectedScopeForGeneration(value);
+                  setSelectedPeriodForGeneration('');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sequence">Sequence</SelectItem>
+                  <SelectItem value="term">Term</SelectItem>
+                  <SelectItem value="year">Academic Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Period *
+              </label>
+              <Select value={selectedPeriodForGeneration} onValueChange={setSelectedPeriodForGeneration}>
+                <SelectTrigger>
+                  <SelectValue placeholder={`Choose a ${selectedScopeForGeneration}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {getPeriodsForScope().map((period: any) => (
+                    <SelectItem key={period.id} value={period.id}>
+                      {period.name || period.year_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This will generate report cards for all students in the selected class. 
+                Existing reports for the same period will be replaced.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setGenerateClassModalOpen(false);
+                  setSelectedClassForGeneration('');
+                  setSelectedScopeForGeneration('sequence');
+                  setSelectedPeriodForGeneration('');
+                }}
+                disabled={generating}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleGenerateClassReports}
+                disabled={!selectedClassForGeneration || !selectedPeriodForGeneration || generating}
+                isLoading={generating}
+                leftIcon={<FileText className="h-4 w-4" />}
+              >
+                {generating ? 'Generating...' : 'Generate Reports'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
       {previewModalOpen && selectedReport && school && <Dialog isOpen={previewModalOpen} onClose={() => {
       setPreviewModalOpen(false);
       setSelectedReport(null);
-    }} title="Report Card Preview" size="xl">
+    }} title={transcriptType === 'official' ? 'Official Transcript' : 'Report Card'} size="xl">
+          <div className="flex items-center justify-between mb-4 print:hidden">
+            <div className="flex gap-2">
+              <Button 
+                variant={transcriptType === 'unofficial' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setTranscriptType('unofficial')}
+              >
+                Unofficial
+              </Button>
+              <Button 
+                variant={transcriptType === 'official' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setTranscriptType('official')}
+                leftIcon={<Award className="h-4 w-4" />}
+              >
+                Official
+              </Button>
+            </div>
+            <div className="text-sm text-gray-600">
+              {transcriptType === 'official' ? (
+                <span className="text-red-600 font-semibold">⚠️ Official Document</span>
+              ) : (
+                <span>Unofficial Preview</span>
+              )}
+            </div>
+          </div>
           <div ref={printRef} className="print:p-0">
-            <ReportCardPreview student={{
-          full_name: selectedReport.student_name,
-          admission_number: selectedReport.admission_number,
-          class_name: selectedReport.class_name
-        }} reportData={selectedReport.data || {}} period={{
-          scope: selectedReport.scope,
-          name: selectedReport.sequence_name || selectedReport.term_name || selectedReport.year_name || 'Academic Year'
-        }} school={{
-          name: school.name,
-          address: school.address,
-          logo_path: school.logo_path
-        }} template={template} />
+            <DynamicReportCard
+              studentId={selectedReport.student_id}
+              sequenceId={selectedReport.sequence_id}
+              termId={selectedReport.term_id}
+              academicYearId={selectedReport.academic_year_id}
+              schoolId={user?.school_id || ''}
+              transcriptType={transcriptType}
+            />
           </div>
           <div className="flex items-center justify-end gap-2 mt-6 print:hidden">
             <Button variant="outline" onClick={() => {
@@ -545,7 +783,7 @@ export function ReportCardsPage() {
               Close
             </Button>
             <Button onClick={() => window.print()} leftIcon={<Printer className="h-4 w-4" />}>
-              Print Report Card
+              Print {transcriptType === 'official' ? 'Official Transcript' : 'Report Card'}
             </Button>
           </div>
         </Dialog>}
