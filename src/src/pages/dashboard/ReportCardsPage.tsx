@@ -43,6 +43,7 @@ export function ReportCardsPage() {
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [school, setSchool] = useState<any>(null);
   const [template, setTemplate] = useState<any>(null);
+  const [selectedClassView, setSelectedClassView] = useState(''); // For main class view
   const [filterClass, setFilterClass] = useState('');
   const [filterScope, setFilterScope] = useState('');
   const [filterSequence, setFilterSequence] = useState('');
@@ -80,7 +81,7 @@ export function ReportCardsPage() {
   }, [user]);
   useEffect(() => {
     applyFilters();
-  }, [reportCards, filterClass, filterScope, filterSequence, filterTerm, filterYear, filterDateFrom, filterDateTo, filterMinAverage, filterMaxAverage, searchQuery]);
+  }, [reportCards, selectedClassView, filterClass, filterScope, filterSequence, filterTerm, filterYear, filterDateFrom, filterDateTo, filterMinAverage, filterMaxAverage, searchQuery]);
   const fetchData = async () => {
     if (!user?.school_id) return;
     try {
@@ -148,6 +149,16 @@ export function ReportCardsPage() {
   };
   const applyFilters = () => {
     let filtered = [...reportCards];
+    
+    // Apply main class view filter first
+    if (selectedClassView) {
+      filtered = filtered.filter(r => {
+        const classId = classes.find(c => c.name === r.class_name)?.id;
+        return classId === selectedClassView;
+      });
+    }
+    
+    // Then apply additional filters
     if (filterClass) {
       filtered = filtered.filter(r => {
         const classId = classes.find(c => c.name === r.class_name)?.id;
@@ -298,22 +309,71 @@ export function ReportCardsPage() {
       </div>;
   }
   return <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Report Cards</h1>
-          <p className="text-gray-500">View and manage student report cards</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Report Cards</h1>
+            <p className="text-gray-500">View and manage student report cards</p>
+          </div>
+          <div className="flex items-center gap-2">
           <Button variant="primary" onClick={() => setGenerateClassModalOpen(true)} leftIcon={<FileText className="h-4 w-4" />}>
             Generate Class Reports
           </Button>
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} leftIcon={<Filter className="h-4 w-4" />}>
             {showFilters ? 'Hide' : 'Show'} Filters
           </Button>
-          <Button variant="outline" onClick={handleExport} disabled={filteredReports.length === 0} leftIcon={<Download className="h-4 w-4" />}>
-            Export CSV
-          </Button>
+            <Button variant="outline" onClick={handleExport} disabled={filteredReports.length === 0} leftIcon={<Download className="h-4 w-4" />}>
+              Export CSV
+            </Button>
+          </div>
         </div>
+
+        {/* Class Selector */}
+        <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-indigo-600" />
+                <label className="text-sm font-semibold text-gray-700">View by Class:</label>
+              </div>
+              <Select value={selectedClassView} onValueChange={setSelectedClassView}>
+                <SelectTrigger className="w-full sm:w-64 bg-white">
+                  {selectedClassView ? (
+                    <span>
+                      {classes.find(c => c.id === selectedClassView)?.name} ({reportCards.filter(r => {
+                        const classId = classes.find(c => c.name === r.class_name)?.id;
+                        return classId === selectedClassView;
+                      }).length} reports)
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="All Classes" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Classes</SelectItem>
+                  {classes.map(cls => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name} ({reportCards.filter(r => {
+                        const classId = classes.find(c => c.name === r.class_name)?.id;
+                        return classId === cls.id;
+                      }).length} reports)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedClassView && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedClassView('')}
+                  leftIcon={<X className="h-4 w-4" />}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {error && <Alert type="error" title="Error">{error}</Alert>}
@@ -456,10 +516,20 @@ export function ReportCardsPage() {
       {/* Analytics Charts - Always Visible */}
       {filteredReports.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-indigo-600" />
-            Performance Analytics
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-indigo-600" />
+              Performance Analytics
+              {selectedClassView && (
+                <Badge variant="info" className="text-sm">
+                  {classes.find(c => c.id === selectedClassView)?.name}
+                </Badge>
+              )}
+            </h2>
+            <p className="text-sm text-gray-600">
+              Showing {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
+            </p>
+          </div>
 
           {/* Performance Distribution & Top Performers */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -536,7 +606,16 @@ export function ReportCardsPage() {
 
       {/* Report Cards List */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Report Cards ({filteredReports.length})</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">
+            Report Cards ({filteredReports.length})
+            {selectedClassView && (
+              <span className="text-indigo-600 ml-2">
+                - {classes.find(c => c.id === selectedClassView)?.name}
+              </span>
+            )}
+          </h2>
+        </div>
 
         {filteredReports.length === 0 ? (
           <Card>
