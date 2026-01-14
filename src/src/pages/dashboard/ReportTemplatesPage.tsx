@@ -1,4 +1,23 @@
 import React, { useEffect, useState } from 'react';
+
+// Type-safe checkbox field helper (must be outside the component)
+type CheckboxFieldProps = {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+};
+
+const CheckboxField: React.FC<CheckboxFieldProps> = ({ label, checked, onChange }) => (
+  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={e => onChange(!!e.target.checked)}
+      className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+    />
+    <span className="text-sm text-gray-700">{label}</span>
+  </label>
+);
 import { supabase } from '../../lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -10,7 +29,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { EnhancedTemplatePreview } from '../../components/reports/EnhancedTemplatePreview';
 import { 
   FileText, Plus, Edit, Trash2, Save, X, Eye, Copy, Check, 
-  Palette, Layout, Star, Sparkles, Grid, List
+  Palette, Layout, Star, Sparkles, Grid, List, Award
 } from 'lucide-react';
 
 interface ReportTemplate {
@@ -45,7 +64,7 @@ export function ReportTemplatesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<ReportTemplate | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  const [formData, setFormData] = useState({
+  const defaultFormData = {
     template_name: '',
     description: '',
     header: '',
@@ -54,11 +73,48 @@ export function ReportTemplatesPage() {
     showRank: true,
     showAttendance: true,
     showComments: true,
+    showGradeScale: false,
+    showSubjectCoefficients: false,
     gradeDisplay: 'percentage',
+    subjectGrouping: 'none',
+    showClassAverage: false,
+    showPercentile: false,
+    useCards: false,
+    colorCodeGrades: false,
+    compactLayout: false,
+    multiPage: false,
+    includeCoverPage: false,
+    includeTableOfContents: false,
+    includeSummaryPage: false,
+    includeProgressCharts: false,
+    includeCharts: false,
+    includeGlossary: false,
+    pageNumbers: false,
+    showWatermark: false,
+    watermarkText: '',
+    watermarkOpacity: 0.05,
+    includeStamp: false,
+    stampPosition: 'bottom-right',
+    includeSignatures: false,
+    includeDigitalSignatures: false,
+    signatureFields: ['Principal', 'Class Teacher', 'Parent/Guardian'],
+    includeSchoolMotto: false,
+    includeQRCode: false,
+    showTermProgress: false,
+    showStrengthsWeaknesses: false,
+    showRecommendations: false,
+    showAttendanceChart: false,
+    showGradeDistribution: false,
+    fontFamily: 'Arial',
+    fontSize: 'medium',
+    borderStyle: 'solid',
+    headerStyle: 'formal',
+    layoutType: 'standard',
     primaryColor: '#4F46E5',
     secondaryColor: '#10B981',
     accentColor: '#F59E0B'
-  });
+  };
+  const [formData, setFormData] = useState({ ...defaultFormData });
 
   useEffect(() => {
     if (user?.school_id) {
@@ -165,7 +221,42 @@ export function ReportTemplatesPage() {
         showRank: formData.showRank,
         showAttendance: formData.showAttendance,
         showComments: formData.showComments,
-        gradeDisplay: formData.gradeDisplay
+        showGradeScale: formData.showGradeScale,
+        showSubjectCoefficients: formData.showSubjectCoefficients,
+        gradeDisplay: formData.gradeDisplay,
+        subjectGrouping: formData.subjectGrouping,
+        showClassAverage: formData.showClassAverage,
+        showPercentile: formData.showPercentile,
+        useCards: formData.useCards,
+        colorCodeGrades: formData.colorCodeGrades,
+        compactLayout: formData.compactLayout,
+        multiPage: formData.multiPage,
+        includeCoverPage: formData.includeCoverPage,
+        includeTableOfContents: formData.includeTableOfContents,
+        includeSummaryPage: formData.includeSummaryPage,
+        includeProgressCharts: formData.includeProgressCharts,
+        includeCharts: formData.includeCharts,
+        includeGlossary: formData.includeGlossary,
+        pageNumbers: formData.pageNumbers,
+        showWatermark: formData.showWatermark,
+        watermarkText: formData.watermarkText,
+        watermarkOpacity: formData.watermarkOpacity,
+        includeStamp: formData.includeStamp,
+        stampPosition: formData.stampPosition,
+        includeSignatures: formData.includeSignatures,
+        includeDigitalSignatures: formData.includeDigitalSignatures,
+        signatureFields: formData.signatureFields,
+        includeSchoolMotto: formData.includeSchoolMotto,
+        includeQRCode: formData.includeQRCode,
+        showTermProgress: formData.showTermProgress,
+        showStrengthsWeaknesses: formData.showStrengthsWeaknesses,
+        showRecommendations: formData.showRecommendations,
+        showAttendanceChart: formData.showAttendanceChart,
+        showGradeDistribution: formData.showGradeDistribution,
+        fontFamily: formData.fontFamily,
+        fontSize: formData.fontSize,
+        borderStyle: formData.borderStyle,
+        headerStyle: formData.headerStyle
       };
 
       const templateData = {
@@ -175,7 +266,7 @@ export function ReportTemplatesPage() {
         template_type: 'custom',
         is_default: false,
         is_active: false,
-        layout_type: 'standard',
+        layout_type: formData.layoutType,
         color_scheme: {
           primary: formData.primaryColor,
           secondary: formData.secondaryColor,
@@ -210,7 +301,43 @@ export function ReportTemplatesPage() {
         showRank: true,
         showAttendance: true,
         showComments: true,
+        showGradeScale: false,
+        showSubjectCoefficients: false,
         gradeDisplay: 'percentage',
+        subjectGrouping: 'none',
+        showClassAverage: false,
+        showPercentile: false,
+        useCards: false,
+        colorCodeGrades: false,
+        compactLayout: false,
+        multiPage: false,
+        includeCoverPage: false,
+        includeTableOfContents: false,
+        includeSummaryPage: false,
+        includeProgressCharts: false,
+        includeCharts: false,
+        includeGlossary: false,
+        pageNumbers: false,
+        showWatermark: false,
+        watermarkText: '',
+        watermarkOpacity: 0.05,
+        includeStamp: false,
+        stampPosition: 'bottom-right',
+        includeSignatures: false,
+        includeDigitalSignatures: false,
+        signatureFields: ['Principal', 'Class Teacher', 'Parent/Guardian'],
+        includeSchoolMotto: false,
+        includeQRCode: false,
+        showTermProgress: false,
+        showStrengthsWeaknesses: false,
+        showRecommendations: false,
+        showAttendanceChart: false,
+        showGradeDistribution: false,
+        fontFamily: 'Arial',
+        fontSize: 'medium',
+        borderStyle: 'solid',
+        headerStyle: 'formal',
+        layoutType: 'standard',
         primaryColor: '#4F46E5',
         secondaryColor: '#10B981',
         accentColor: '#F59E0B'
@@ -228,6 +355,7 @@ export function ReportTemplatesPage() {
 
   const handleEdit = (template: ReportTemplate) => {
     setFormData({
+      ...defaultFormData,
       template_name: template.template_name || '',
       description: template.description || '',
       header: template.config.header || '',
@@ -236,7 +364,43 @@ export function ReportTemplatesPage() {
       showRank: template.config.showRank ?? true,
       showAttendance: template.config.showAttendance ?? true,
       showComments: template.config.showComments ?? true,
+      showGradeScale: template.config.showGradeScale ?? false,
+      showSubjectCoefficients: template.config.showSubjectCoefficients ?? false,
       gradeDisplay: template.config.gradeDisplay || 'percentage',
+      subjectGrouping: template.config.subjectGrouping || 'none',
+      showClassAverage: template.config.showClassAverage ?? false,
+      showPercentile: template.config.showPercentile ?? false,
+      useCards: template.config.useCards ?? false,
+      colorCodeGrades: template.config.colorCodeGrades ?? false,
+      compactLayout: template.config.compactLayout ?? false,
+      multiPage: template.config.multiPage ?? false,
+      includeCoverPage: template.config.includeCoverPage ?? false,
+      includeTableOfContents: template.config.includeTableOfContents ?? false,
+      includeSummaryPage: template.config.includeSummaryPage ?? false,
+      includeProgressCharts: template.config.includeProgressCharts ?? false,
+      includeCharts: template.config.includeCharts ?? false,
+      includeGlossary: template.config.includeGlossary ?? false,
+      pageNumbers: template.config.pageNumbers ?? false,
+      showWatermark: template.config.showWatermark ?? false,
+      watermarkText: template.config.watermarkText || '',
+      watermarkOpacity: template.config.watermarkOpacity ?? 0.05,
+      includeStamp: template.config.includeStamp ?? false,
+      stampPosition: template.config.stampPosition || 'bottom-right',
+      includeSignatures: template.config.includeSignatures ?? false,
+      includeDigitalSignatures: template.config.includeDigitalSignatures ?? false,
+      signatureFields: template.config.signatureFields || ['Principal', 'Class Teacher', 'Parent/Guardian'],
+      includeSchoolMotto: template.config.includeSchoolMotto ?? false,
+      includeQRCode: template.config.includeQRCode ?? false,
+      showTermProgress: template.config.showTermProgress ?? false,
+      showStrengthsWeaknesses: template.config.showStrengthsWeaknesses ?? false,
+      showRecommendations: template.config.showRecommendations ?? false,
+      showAttendanceChart: template.config.showAttendanceChart ?? false,
+      showGradeDistribution: template.config.showGradeDistribution ?? false,
+      fontFamily: template.config.fontFamily || 'Arial',
+      fontSize: template.config.fontSize || 'medium',
+      borderStyle: template.config.borderStyle || 'solid',
+      headerStyle: template.config.headerStyle || 'formal',
+      layoutType: template.layout_type || 'standard',
       primaryColor: template.color_scheme?.primary || '#4F46E5',
       secondaryColor: template.color_scheme?.secondary || '#10B981',
       accentColor: template.color_scheme?.accent || '#F59E0B'
@@ -264,20 +428,7 @@ export function ReportTemplatesPage() {
   };
 
   const handleCancel = () => {
-    setFormData({
-      template_name: '',
-      description: '',
-      header: '',
-      footer: '',
-      showLogo: true,
-      showRank: true,
-      showAttendance: true,
-      showComments: true,
-      gradeDisplay: 'percentage',
-      primaryColor: '#4F46E5',
-      secondaryColor: '#10B981',
-      accentColor: '#F59E0B'
-    });
+    setFormData({ ...defaultFormData });
     setEditingId(null);
     setShowAddForm(false);
   };
@@ -696,49 +847,277 @@ export function ReportTemplatesPage() {
                 </div>
               </div>
 
-              {/* Display Options */}
+              {/* Layout & Style */}
               <div className="border-t pt-4">
                 <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Layout className="h-4 w-4" />
+                  Layout & Style
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Layout Type</label>
+                    <select
+                      value={formData.layoutType}
+                      onChange={e => setFormData({ ...formData, layoutType: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="compact">Compact</option>
+                      <option value="detailed">Detailed</option>
+                      <option value="minimal">Minimal</option>
+                      <option value="booklet">Booklet</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Font Family</label>
+                    <select
+                      value={formData.fontFamily}
+                      onChange={e => setFormData({ ...formData, fontFamily: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="Arial">Arial</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="sans-serif">Sans-serif</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Font Size</label>
+                    <select
+                      value={formData.fontSize}
+                      onChange={e => setFormData({ ...formData, fontSize: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="small">Small</option>
+                      <option value="medium">Medium</option>
+                      <option value="large">Large</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Border Style</label>
+                    <select
+                      value={formData.borderStyle}
+                      onChange={e => setFormData({ ...formData, borderStyle: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="none">None</option>
+                      <option value="solid">Solid</option>
+                      <option value="double">Double</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Display Options */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
                   Display Options
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { label: 'Show school logo', key: 'showLogo' },
+                    { label: 'Show class rank', key: 'showRank' },
+                    { label: 'Show attendance', key: 'showAttendance' },
+                    { label: 'Show teacher comments', key: 'showComments' },
+                    { label: 'Show grade scale', key: 'showGradeScale' },
+                    { label: 'Show subject coefficients', key: 'showSubjectCoefficients' },
+                    { label: 'Show class average', key: 'showClassAverage' },
+                    { label: 'Show percentile', key: 'showPercentile' },
+                    { label: 'Use cards', key: 'useCards' },
+                    { label: 'Color code grades', key: 'colorCodeGrades' },
+                    { label: 'Compact layout', key: 'compactLayout' },
+                  ].map(opt => (
+                    <CheckboxField
+                      key={opt.key}
+                      label={opt.label}
+                      checked={formData[opt.key as keyof typeof formData] as boolean}
+                      onChange={checked => setFormData({ ...formData, [opt.key]: checked })}
+                    />
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Grade Display</label>
+                    <select
+                      value={formData.gradeDisplay}
+                      onChange={e => setFormData({ ...formData, gradeDisplay: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="grade_only">Grade Only</option>
+                      <option value="percentage">Percentage</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject Grouping</label>
+                    <select
+                      value={formData.subjectGrouping}
+                      onChange={e => setFormData({ ...formData, subjectGrouping: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="none">None</option>
+                      <option value="by_type">By Type</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Booklet/Multi-Page Options */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Booklet / Multi-Page
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { label: 'Multi-page', key: 'multiPage' },
+                    { label: 'Include cover page', key: 'includeCoverPage' },
+                    { label: 'Include table of contents', key: 'includeTableOfContents' },
+                    { label: 'Include summary page', key: 'includeSummaryPage' },
+                    { label: 'Include progress charts', key: 'includeProgressCharts' },
+                    { label: 'Include charts', key: 'includeCharts' },
+                    { label: 'Include glossary', key: 'includeGlossary' },
+                    { label: 'Page numbers', key: 'pageNumbers' },
+                  ].map(opt => (
+                    <CheckboxField
+                      key={opt.key}
+                      label={opt.label}
+                      checked={formData[opt.key as keyof typeof formData] as boolean}
+                      onChange={checked => setFormData({ ...formData, [opt.key]: checked })}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Watermark & Stamp */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Award className="h-4 w-4" />
+                  Watermark & Stamp
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
                     <input
                       type="checkbox"
-                      checked={formData.showLogo}
-                      onChange={(e) => setFormData({ ...formData, showLogo: e.target.checked })}
+                      checked={formData.showWatermark}
+                      onChange={e => setFormData({ ...formData, showWatermark: e.target.checked })}
                       className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-gray-700">Show school logo</span>
+                    <span className="text-sm text-gray-700">Show watermark</span>
+                  </label>
+                  {formData.showWatermark && (
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={formData.watermarkText}
+                        onChange={e => setFormData({ ...formData, watermarkText: e.target.value })}
+                        placeholder="Watermark text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={formData.watermarkOpacity}
+                        onChange={e => setFormData({ ...formData, watermarkOpacity: parseFloat(e.target.value) })}
+                        className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm"
+                        placeholder="Opacity"
+                      />
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={formData.includeStamp}
+                      onChange={e => setFormData({ ...formData, includeStamp: e.target.checked })}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">Include official stamp</span>
+                  </label>
+                  {formData.includeStamp && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Stamp Position</label>
+                      <select
+                        value={formData.stampPosition}
+                        onChange={e => setFormData({ ...formData, stampPosition: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="top-left">Top Left</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Signatures & Digital */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  Signatures & Digital
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={formData.includeSignatures}
+                      onChange={e => setFormData({ ...formData, includeSignatures: e.target.checked })}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">Include signatures</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
                     <input
                       type="checkbox"
-                      checked={formData.showRank}
-                      onChange={(e) => setFormData({ ...formData, showRank: e.target.checked })}
+                      checked={formData.includeDigitalSignatures}
+                      onChange={e => setFormData({ ...formData, includeDigitalSignatures: e.target.checked })}
                       className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-gray-700">Show class rank</span>
+                    <span className="text-sm text-gray-700">Include digital signatures</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      checked={formData.showAttendance}
-                      onChange={(e) => setFormData({ ...formData, showAttendance: e.target.checked })}
-                      className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                  {formData.includeDigitalSignatures && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Signature Fields (comma separated)</label>
+                      <input
+                        type="text"
+                        value={formData.signatureFields.join(', ')}
+                        onChange={e => setFormData({ ...formData, signatureFields: e.target.value.split(',').map(f => f.trim()).filter(Boolean) })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        placeholder="e.g. Principal, Class Teacher, Parent/Guardian"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Miscellaneous */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Grid className="h-4 w-4" />
+                  Miscellaneous
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { label: 'Include school motto', key: 'includeSchoolMotto' },
+                    { label: 'Include QR code', key: 'includeQRCode' },
+                    { label: 'Show term progress', key: 'showTermProgress' },
+                    { label: 'Show strengths/weaknesses', key: 'showStrengthsWeaknesses' },
+                    { label: 'Show recommendations', key: 'showRecommendations' },
+                    { label: 'Show attendance chart', key: 'showAttendanceChart' },
+                    { label: 'Show grade distribution', key: 'showGradeDistribution' },
+                  ].map(opt => (
+                    <CheckboxField
+                      key={opt.key}
+                      label={opt.label}
+                      checked={formData[opt.key as keyof typeof formData] as boolean}
+                      onChange={checked => setFormData({ ...formData, [opt.key]: checked })}
                     />
-                    <span className="text-sm text-gray-700">Show attendance</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      checked={formData.showComments}
-                      onChange={(e) => setFormData({ ...formData, showComments: e.target.checked })}
-                      className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-gray-700">Show teacher comments</span>
-                  </label>
+                  ))}
+
                 </div>
               </div>
 
