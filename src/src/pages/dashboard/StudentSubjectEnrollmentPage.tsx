@@ -176,7 +176,7 @@ export function StudentSubjectEnrollmentPage() {
         .from('enrollments')
         .select('id, subject_id')
         .eq('student_id', studentId)
-        .eq('school_id', user.school_id);
+        .eq('school_id', user?.school_id ?? '');
       if (error) throw error;
       const enrolledSubjectIds = (data || []).map(e => e.subject_id);
       setSelectedSubjects(enrolledSubjectIds);
@@ -217,7 +217,7 @@ export function StudentSubjectEnrollmentPage() {
         .from('enrollments')
         .select('id, subject_id')
         .eq('student_id', selectedStudent)
-        .eq('school_id', user.school_id);
+        .eq('school_id', user?.school_id ?? '');
       const currentSubjectIds = (currentEnrollments || []).map(e => e.subject_id);
       const subjectsToAdd = selectedSubjects.filter(id => !currentSubjectIds.includes(id));
       const subjectsToRemove = currentSubjectIds.filter(id => !selectedSubjects.includes(id));
@@ -240,7 +240,7 @@ export function StudentSubjectEnrollmentPage() {
           .from('enrollments')
           .delete()
           .in('id', enrollmentsToDelete)
-          .eq('school_id', user.school_id);
+          .eq('school_id', user?.school_id);
         if (deleteError) throw deleteError;
       }
       setSuccess('Enrollments saved successfully');
@@ -313,7 +313,7 @@ export function StudentSubjectEnrollmentPage() {
         .from('enrollments')
         .delete()
         .eq('id', enrollmentId)
-        .eq('school_id', user.school_id);
+        .eq('school_id', user?.school_id ?? '');
       if (error) throw error;
       setSuccess('Enrollment removed successfully');
       fetchData();
@@ -350,7 +350,7 @@ export function StudentSubjectEnrollmentPage() {
   const filteredStudentsForBulk = bulkClassFilter ? students.filter(s => s.class_id === bulkClassFilter) : [];
   if (loading && students.length === 0) {
     return <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>;
   }
   return <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50/50 min-h-screen max-w-full overflow-x-hidden">
@@ -382,8 +382,8 @@ export function StudentSubjectEnrollmentPage() {
         </div>
       </div>
 
-      {error && <Alert variant="error" title="Error" message={error} onClose={() => setError('')} />}
-      {success && <Alert variant="success" title="Success" message={success} onClose={() => setSuccess('')} />}
+      {error && <Alert type="error" title="Error">{error}</Alert>}
+      {success && <Alert type="success" title="Success">{success}</Alert>}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -509,7 +509,7 @@ export function StudentSubjectEnrollmentPage() {
                           <span className="text-xs sm:text-sm text-gray-600 truncate">
                             {enrollment.subject_name}
                           </span>
-                          <Badge variant={enrollment.subject_type === 'core' ? 'default' : 'secondary'} className="text-xs">
+                          <Badge variant={enrollment.subject_type === 'core' ? 'success' : 'neutral'} className="text-xs">
                             {enrollment.subject_type}
                           </Badge>
                         </div>
@@ -600,7 +600,7 @@ export function StudentSubjectEnrollmentPage() {
                           {subject.name}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Badge variant={subject.subject_type === 'core' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                          <Badge variant={subject.subject_type === 'core' ? 'success' : 'neutral'} className="text-[10px] px-1.5 py-0">
                             {subject.subject_type}
                           </Badge>
                           <span className="text-xs text-gray-500">
@@ -727,45 +727,67 @@ export function StudentSubjectEnrollmentPage() {
         </div>
       </Dialog>
 
-      {/* View Details Modal */}
-      {viewModalOpen && selectedEnrollment && <Dialog isOpen={viewModalOpen} onClose={() => {
-      setViewModalOpen(false);
-      setSelectedEnrollment(null);
-    }} title="Enrollment Details">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600">
-                Student
-              </label>
-              <p className="text-lg font-semibold text-gray-900">
-                {selectedEnrollment.student_name}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">
-                Subject
-              </label>
-              <p className="text-lg font-semibold text-gray-900">
-                {selectedEnrollment.subject_name}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">
-                Subject Type
-              </label>
-              <div className="mt-1">
-                <Badge variant={selectedEnrollment.subject_type === 'core' ? 'default' : 'secondary'}>
-                  {selectedEnrollment.subject_type}
-                </Badge>
+      {/* View Details Modal - Professional & Sophisticated */}
+      {viewModalOpen && selectedEnrollment && (
+        <Dialog
+          isOpen={viewModalOpen}
+          onClose={() => {
+            setViewModalOpen(false);
+            setSelectedEnrollment(null);
+          }}
+          title="Enrollment Details"
+          size="md"
+        >
+          <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 p-6 space-y-6">
+            <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
+              <div className="bg-indigo-100 rounded-full p-3">
+                <GraduationCap className="h-8 w-8 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">{selectedEnrollment.student_name}</h2>
+                <p className="text-sm text-gray-500">Student</p>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">
-                Enrolled Date
-              </label>
-              <p className="text-gray-900">
-                {new Date(selectedEnrollment.created_at).toLocaleDateString()}
-              </p>
+            <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
+              <div className="bg-blue-100 rounded-full p-3">
+                <BookOpen className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-1">{selectedEnrollment.subject_name}</h2>
+                <p className="text-sm text-gray-500">Subject</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
+              <div className="bg-green-100 rounded-full p-3">
+                <Badge variant={selectedEnrollment.subject_type === 'core' ? 'success' : 'neutral'} className="text-base px-3 py-1">
+                  {selectedEnrollment.subject_type.charAt(0).toUpperCase() + selectedEnrollment.subject_type.slice(1)}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Subject Type</p>
+              </div>
+            </div>
+            {/* Subject Details: Coefficient */}
+            <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
+              <div className="bg-yellow-100 rounded-full p-3">
+                <span className="font-bold text-yellow-700 text-lg">{(() => {
+                  // Find subject details
+                  const subj = subjects.find(s => s.id === selectedEnrollment.subject_id);
+                  return subj ? subj.coefficient : '-';
+                })()}</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Subject Coefficient</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
+              <div className="bg-gray-100 rounded-full p-3">
+                <Eye className="h-8 w-8 text-gray-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-medium text-gray-900 mb-1">{new Date(selectedEnrollment.created_at).toLocaleDateString()}</h2>
+                <p className="text-sm text-gray-500">Enrolled Date</p>
+              </div>
             </div>
             <div className="pt-4 flex justify-end">
               <Button variant="outline" onClick={() => setViewModalOpen(false)}>
@@ -773,6 +795,7 @@ export function StudentSubjectEnrollmentPage() {
               </Button>
             </div>
           </div>
-        </Dialog>}
+        </Dialog>
+      )}
     </div>;
 }

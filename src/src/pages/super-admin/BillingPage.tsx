@@ -469,7 +469,7 @@ export function BillingPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge variant="outline" className="font-medium">
+                        <Badge variant="neutral" className="font-medium">
                           {sub.subscription_plans?.name}
                         </Badge>
                       </td>

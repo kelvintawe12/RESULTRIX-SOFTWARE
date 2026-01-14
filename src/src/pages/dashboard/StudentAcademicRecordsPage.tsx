@@ -104,6 +104,7 @@ export function StudentAcademicRecordsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
+  const [selectedTerm, setSelectedTerm] = useState('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'excellent' | 'good' | 'average' | 'poor'>('all');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
@@ -122,6 +123,7 @@ export function StudentAcademicRecordsPage() {
   const [sequenceMarks, setSequenceMarks] = useState<SequenceMark[]>([]);
   const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+  const [terms, setTerms] = useState<{ id: string; name: string; academic_year_id: string }[]>([]);
   
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -135,12 +137,22 @@ export function StudentAcademicRecordsPage() {
   // Transcript generation modal
   const [transcriptModalOpen, setTranscriptModalOpen] = useState(false);
   const [generatingTranscript, setGeneratingTranscript] = useState(false);
+
   // Fetch students on mount
   useEffect(() => {
     if (user?.school_id) {
       fetchStudents();
     }
-  }, [user?.school_id, currentPage, searchTerm, selectedClass]);
+  }, [user?.school_id, currentPage, searchTerm, selectedClass, selectedYear, selectedTerm]);
+
+  // Fetch classes and years on mount
+  useEffect(() => {
+    if (user?.school_id) {
+      fetchClasses();
+      fetchAcademicYears();
+      fetchTerms();
+    }
+  }, [user?.school_id]);
 
   // Fetch student data when a student is selected
   useEffect(() => {
@@ -170,58 +182,57 @@ export function StudentAcademicRecordsPage() {
     setPerformanceStats({ avgScore, highest, lowest, status });
   }, [sequenceMarks, selectedStudent]);
 
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      
       if (!user?.school_id) {
         setError('No school ID found');
         setLoading(false);
         return;
       }
-      
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
-
       let query = supabase.from('students').select(`
-          id,
-          admission_number,
-          full_name,
-          profile_photo_path,
-          email,
-          phone,
-          address,
-          date_of_birth,
-          gender,
-          medical_conditions,
-          allergies,
-          blood_type,
-          classes (name),
-          academic_years (year_name)
-        `, { count: 'exact' })
-        .eq('school_id', user.school_id)
-        .order('full_name');
-
+        id,
+        admission_number,
+        full_name,
+        profile_photo_path,
+        email,
+        phone,
+        address,
+        date_of_birth,
+        gender,
+        medical_conditions,
+        allergies,
+        blood_type,
+        class_id,
+        academic_year_id,
+        classes (name),
+        academic_years (year_name)
+      `, { count: 'exact' })
+      .eq('school_id', user.school_id)
+      .order('full_name');
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,admission_number.ilike.%${searchTerm}%`);
       }
-
-      // Note: Filtering by joined column (classes.name) requires !inner join or client-side filtering
-      // For now, we fetch page and filter client side if needed, or rely on search
-      
-      const {
-        data,
-        error,
-        count
-      } = await query.range(from, to);
-
+      // Filter by class
+      if (selectedClass !== 'all') {
+        query = query.eq('class_id', selectedClass);
+      }
+      // Filter by year
+      if (selectedYear !== 'all') {
+        query = query.eq('academic_year_id', selectedYear);
+      }
+      // Filter by term (via enrollments or marks, so this is a placeholder for now)
+      // If you want to filter students by term, you may need to join with enrollments/marks/terms
+      // For now, we filter sequenceMarks by term below
+      const { data, error, count } = await query.range(from, to);
       if (error) throw error;
-      
       if (count !== null) {
         setTotalCount(count);
         setTotalPages(Math.ceil(count / itemsPerPage));
       }
-
       const formattedStudents: Student[] = (data || []).map((student: any) => ({
         id: student.id,
         admission_number: student.admission_number,
@@ -234,10 +245,12 @@ export function StudentAcademicRecordsPage() {
         medical_conditions: student.medical_conditions,
         allergies: student.allergies,
         blood_type: student.blood_type,
+        class_id: student.class_id,
         class_name: student.classes?.name,
-        photo_url: student.profile_photo_path,
+        academic_year_id: student.academic_year_id,
         years_enrolled: student.academic_years?.year_name,
-        overall_average: undefined // will be set later
+        photo_url: student.profile_photo_path,
+        overall_average: undefined
       }));
       setStudents(formattedStudents);
     } catch (err: any) {
@@ -245,6 +258,43 @@ export function StudentAcademicRecordsPage() {
       console.error('Error fetching students:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch terms
+  const fetchTerms = async () => {
+    try {
+      if (!user?.school_id) return;
+      // Only fetch terms for the current school
+      const { data, error } = await supabase.from('terms').select('id, name, academic_year_id').in('academic_year_id',
+        (await supabase.from('academic_years').select('id').eq('school_id', user.school_id)).data?.map(y => y.id) || []
+      ).order('name');
+      if (error) throw error;
+      setTerms(data || []);
+    } catch (err) {
+      console.error('Error fetching terms:', err);
+    }
+  };
+
+  // Fetch classes
+  const fetchClasses = async () => {
+    try {
+      const { data, error } = await supabase.from('classes').select('id, name').eq('school_id', user.school_id).order('name');
+      if (error) throw error;
+      setClasses(data || []);
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+    }
+  };
+
+  // Fetch academic years
+  const fetchAcademicYears = async () => {
+    try {
+      const { data, error } = await supabase.from('academic_years').select('id, year_name').eq('school_id', user.school_id).order('year_name');
+      if (error) throw error;
+      setAcademicYears(data || []);
+    } catch (err) {
+      console.error('Error fetching academic years:', err);
     }
   };
 
@@ -357,11 +407,21 @@ export function StudentAcademicRecordsPage() {
     }
   };
 
-  const filteredStudents = students.filter(student => {
-    // Search is handled server-side now, but we keep class filter client-side for the page
-    const matchesClass = selectedClass === 'all' || student.class_name === selectedClass;
-    return matchesClass;
-  });
+  // No longer needed: search/class/year filtering is now server-side
+  const filteredStudents = students;
+  // Only show terms for selected year
+  // Only show terms for selected year and current school
+  const filteredTerms = selectedYear === 'all'
+    ? terms
+    : terms.filter(term => term.academic_year_id === selectedYear);
+  // Filter sequenceMarks by selectedTerm (by term id)
+  const filteredSequenceMarks = selectedTerm === 'all'
+    ? sequenceMarks
+    : sequenceMarks.filter(mark => {
+        // Find the term id for this mark, matching both name and academic_year_id
+        const termObj = terms.find(t => t.name === mark.term && (selectedYear === 'all' || t.academic_year_id === selectedYear));
+        return termObj && termObj.id === selectedTerm;
+      });
 
   const toggleYear = (yearName: string) => {
     setExpandedYears(prev => {
@@ -427,9 +487,21 @@ export function StudentAcademicRecordsPage() {
           </div>
           <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             <option value="all">All Years</option>
+            {academicYears.map(year => (
+              <option key={year.id} value={year.id}>{year.year_name}</option>
+            ))}
           </select>
           <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             <option value="all">All Classes</option>
+            {classes.map(cls => (
+              <option key={cls.id} value={cls.id}>{cls.name}</option>
+            ))}
+          </select>
+          <select value={selectedTerm} onChange={e => setSelectedTerm(e.target.value)} className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="all">All Terms</option>
+            {filteredTerms.map(term => (
+              <option key={term.id} value={term.id}>{term.name}</option>
+            ))}
           </select>
         </div>
       </Card>
@@ -683,7 +755,7 @@ export function StudentAcademicRecordsPage() {
 
                 {/* Sequence Marks Tab */}
                 <Tabs.Content value="sequence-marks">
-                  {sequenceMarks.length === 0 ? <div className="text-center py-12 text-slate-500">
+                  {filteredSequenceMarks.length === 0 ? <div className="text-center py-12 text-slate-500">
                       No sequence marks available for this student.
                     </div> : <Card>
                       <div className="overflow-x-auto">
@@ -714,7 +786,7 @@ export function StudentAcademicRecordsPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200">
-                            {sequenceMarks.map((mark, idx) => (
+                            {filteredSequenceMarks.map((mark, idx) => (
                               <tr key={idx}>
                                 <td className="px-6 py-4 text-sm text-slate-700">{mark.year}</td>
                                 <td className="px-6 py-4 text-sm text-slate-700">{mark.term}</td>
