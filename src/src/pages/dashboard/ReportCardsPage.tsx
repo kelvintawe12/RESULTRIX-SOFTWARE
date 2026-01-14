@@ -453,15 +453,90 @@ export function ReportCardsPage() {
           </CardContent>
         </Card>}
 
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Report Cards ({filteredReports.length})</h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />}>
-              View Analytics
-            </Button>
+      {/* Analytics Charts - Always Visible */}
+      {filteredReports.length > 0 && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-indigo-600" />
+            Performance Analytics
+          </h2>
+
+          {/* Performance Distribution & Top Performers */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Performance Distribution Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  Performance Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={[
+                    { range: '0-40%', count: filteredReports.filter(r => r.data?.final_average < 40).length },
+                    { range: '40-50%', count: filteredReports.filter(r => r.data?.final_average >= 40 && r.data?.final_average < 50).length },
+                    { range: '50-60%', count: filteredReports.filter(r => r.data?.final_average >= 50 && r.data?.final_average < 60).length },
+                    { range: '60-70%', count: filteredReports.filter(r => r.data?.final_average >= 60 && r.data?.final_average < 70).length },
+                    { range: '70-80%', count: filteredReports.filter(r => r.data?.final_average >= 70 && r.data?.final_average < 80).length },
+                    { range: '80-90%', count: filteredReports.filter(r => r.data?.final_average >= 80 && r.data?.final_average < 90).length },
+                    { range: '90-100%', count: filteredReports.filter(r => r.data?.final_average >= 90).length },
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="range" fontSize={12} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" name="Students" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Top Performers */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Award className="h-5 w-5 text-amber-600" />
+                  Top 10 Performers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {filteredReports
+                    .filter(r => r.data?.final_average)
+                    .sort((a, b) => (b.data?.final_average || 0) - (a.data?.final_average || 0))
+                    .slice(0, 10)
+                    .map((report, index) => (
+                      <div key={report.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-sm ${
+                            index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-gray-300'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">{report.student_name}</p>
+                            <p className="text-xs text-gray-500">{report.class_name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-blue-600">{report.data.final_average.toFixed(1)}%</p>
+                          {report.data.letter_grade && (
+                            <Badge variant="success" className="text-xs">{report.data.letter_grade}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
+      )}
+
+      {/* Report Cards List */}
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Report Cards ({filteredReports.length})</h2>
 
         {filteredReports.length === 0 ? (
           <Card>
@@ -541,9 +616,9 @@ export function ReportCardsPage() {
                           </p>
                           <div className="flex items-baseline gap-1">
                             <p className="text-2xl font-bold text-blue-600">
-                              {report.data.final_average.toFixed(1)}
+                              {((report.data.final_average / 100) * 20).toFixed(1)}
                             </p>
-                            <span className="text-sm text-blue-600">%</span>
+                            <span className="text-sm text-blue-600">/20</span>
                           </div>
                           {report.data.letter_grade && (
                             <Badge 
@@ -614,11 +689,16 @@ export function ReportCardsPage() {
                       variant="outline" 
                       size="sm" 
                       onClick={() => {
-                        setSelectedReport(report);
-                        setViewModalOpen(true);
+                        if (report.data) {
+                          setSelectedReport(report);
+                          setViewModalOpen(true);
+                        } else {
+                          setError('Report data not available. Please regenerate this report.');
+                        }
                       }}
                       leftIcon={<Eye className="h-4 w-4" />}
                       className="w-full"
+                      disabled={!report.data}
                     >
                       View Details
                     </Button>
@@ -686,36 +766,39 @@ export function ReportCardsPage() {
           size="xl"
         >
           <div className="space-y-6 max-h-[85vh] overflow-y-auto">
+            {/* Debug: Log the data structure */}
+            {console.log('Report Data:', selectedReport.data)}
+            {console.log('Subjects:', selectedReport.data.subjects)}
             {/* Header Section with Student Info */}
-            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-2xl">
+            <div className="bg-white border-b-4 border-indigo-600 rounded-lg p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                      <Award className="h-8 w-8" />
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-indigo-100 rounded-lg p-2">
+                      <Award className="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-white/80 uppercase tracking-wider">Student Report Card</p>
-                      <h2 className="text-3xl font-bold">{selectedReport.student_name}</h2>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Student Report Card</p>
+                      <h2 className="text-2xl font-bold text-gray-900">{selectedReport.student_name}</h2>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6 mt-4 text-white/90">
+                  <div className="flex items-center gap-6 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      <span className="font-mono text-sm">{selectedReport.admission_number}</span>
+                      <FileText className="h-4 w-4 text-gray-400" />
+                      <span className="font-mono">{selectedReport.admission_number}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span className="text-sm">{selectedReport.class_name}</span>
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span>{selectedReport.class_name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span className="text-sm">{selectedReport.sequence_name || selectedReport.term_name || selectedReport.year_name}</span>
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span>{selectedReport.sequence_name || selectedReport.term_name || selectedReport.year_name}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <Badge variant="neutral" className="bg-white/20 backdrop-blur-sm text-white border-white/30 text-base px-4 py-2">
+                  <Badge variant="neutral" className="text-sm px-3 py-1">
                     {selectedReport.scope.toUpperCase()}
                   </Badge>
                 </div>
@@ -723,39 +806,43 @@ export function ReportCardsPage() {
             </div>
 
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Overall Average */}
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <Target className="h-8 w-8 opacity-80" />
+              <div className="bg-white border-2 border-blue-200 rounded-lg p-5 hover:border-blue-400 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <Target className="h-6 w-6 text-blue-600" />
                   {selectedReport.data.final_average >= 60 ? (
-                    <TrendingUp className="h-6 w-6" />
+                    <TrendingUp className="h-5 w-5 text-green-600" />
                   ) : (
-                    <TrendingDown className="h-6 w-6" />
+                    <TrendingDown className="h-5 w-5 text-red-600" />
                   )}
                 </div>
-                <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Overall Average</p>
-                <p className="text-4xl font-bold mb-2">{selectedReport.data.final_average.toFixed(1)}%</p>
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Overall Average</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-bold text-gray-900">{((selectedReport.data.final_average / 100) * 20).toFixed(1)}</p>
+                  <span className="text-lg text-gray-600">/ 20</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">({selectedReport.data.final_average.toFixed(1)}%)</p>
                 {selectedReport.data.letter_grade && (
-                  <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-semibold">
+                  <Badge variant={selectedReport.data.final_average >= 60 ? 'success' : 'danger'} className="text-xs mt-1">
                     Grade {selectedReport.data.letter_grade}
-                  </div>
+                  </Badge>
                 )}
               </div>
 
               {/* Class Rank */}
               {(selectedReport.data.rank !== undefined && selectedReport.data.rank !== null) && (
-                <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <Award className="h-8 w-8 opacity-80" />
-                    {selectedReport.data.rank <= 3 && <span className="text-2xl">🏆</span>}
+                <div className="bg-white border-2 border-amber-200 rounded-lg p-5 hover:border-amber-400 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <Award className="h-6 w-6 text-amber-600" />
+                    {selectedReport.data.rank <= 3 && <span className="text-xl">🏆</span>}
                   </div>
-                  <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Class Ranking</p>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <p className="text-4xl font-bold">#{selectedReport.data.rank}</p>
-                    <p className="text-xl opacity-80">/ {selectedReport.data.class_size}</p>
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Class Ranking</p>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <p className="text-3xl font-bold text-gray-900">#{selectedReport.data.rank}</p>
+                    <p className="text-lg text-gray-600">/ {selectedReport.data.class_size}</p>
                   </div>
-                  <p className="text-sm font-medium">
+                  <p className="text-xs text-gray-600">
                     {selectedReport.data.rank === 1 ? 'Top of Class!' : 
                      selectedReport.data.rank <= 3 ? 'Top 3 Student' : 
                      `Top ${Math.round((selectedReport.data.rank / selectedReport.data.class_size) * 100)}%`}
@@ -764,15 +851,15 @@ export function ReportCardsPage() {
               )}
 
               {/* Attendance */}
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <Clock className="h-8 w-8 opacity-80" />
-                  <span className="text-2xl">{selectedReport.data.attendance_percentage >= 90 ? '✓' : '!'}</span>
+              <div className="bg-white border-2 border-green-200 rounded-lg p-5 hover:border-green-400 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <Clock className="h-6 w-6 text-green-600" />
+                  <span className="text-xl">{selectedReport.data.attendance_percentage >= 90 ? '✓' : '!'}</span>
                 </div>
-                <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Attendance</p>
-                <p className="text-4xl font-bold mb-2">{selectedReport.data.attendance_percentage.toFixed(1)}%</p>
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Attendance</p>
+                <p className="text-3xl font-bold text-gray-900 mb-1">{selectedReport.data.attendance_percentage.toFixed(1)}%</p>
                 {selectedReport.data.attendance_present !== undefined && selectedReport.data.attendance_total !== undefined && (
-                  <p className="text-sm opacity-90">
+                  <p className="text-xs text-gray-600">
                     {selectedReport.data.attendance_present} / {selectedReport.data.attendance_total} days
                   </p>
                 )}
@@ -780,13 +867,13 @@ export function ReportCardsPage() {
 
               {/* Total Subjects */}
               {selectedReport.data.subjects && Array.isArray(selectedReport.data.subjects) && (
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <BookOpen className="h-8 w-8 opacity-80" />
+                <div className="bg-white border-2 border-purple-200 rounded-lg p-5 hover:border-purple-400 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <BookOpen className="h-6 w-6 text-purple-600" />
                   </div>
-                  <p className="text-sm font-medium opacity-90 uppercase tracking-wide mb-1">Subjects</p>
-                  <p className="text-4xl font-bold mb-2">{selectedReport.data.subjects.length}</p>
-                  <p className="text-sm opacity-90">Enrolled courses</p>
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Subjects</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{selectedReport.data.subjects.length}</p>
+                  <p className="text-xs text-gray-600">Enrolled courses</p>
                 </div>
               )}
             </div>
@@ -804,10 +891,14 @@ export function ReportCardsPage() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={selectedReport.data.subjects.map((subj: any) => ({
-                        name: subj.subject_name.length > 15 ? subj.subject_name.substring(0, 15) + '...' : subj.subject_name,
-                        score: subj.total_out_of > 0 ? ((subj.total_score / subj.total_out_of) * 100).toFixed(1) : 0
-                      }))}>
+                      <BarChart data={(selectedReport.data.subjects || []).map((subj: any) => {
+                        const name = subj.subject_name || subj.name || 'Unknown Subject';
+                        const score = subj.total_out_of > 0 ? ((subj.total_score / subj.total_out_of) * 100) : (subj.percentage || 0);
+                        return {
+                          name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+                          score: typeof score === 'number' ? parseFloat(score.toFixed(1)) : 0
+                        };
+                      })}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={11} />
                         <YAxis domain={[0, 100]} />
@@ -886,18 +977,25 @@ export function ReportCardsPage() {
                       </thead>
                       <tbody>
                         {selectedReport.data.subjects.map((subject: any, index: number) => {
-                          const percentage = subject.total_out_of > 0 ? ((subject.total_score / subject.total_out_of) * 100) : 0;
+                          const subjectName = subject.subject_name || subject.name || 'Unknown Subject';
+                          const subjectType = subject.subject_type || subject.type || 'N/A';
+                          const coefficient = subject.coefficient || subject.coef || 1;
+                          const totalScore = subject.total_score || subject.score || 0;
+                          const totalOutOf = subject.total_out_of || subject.out_of || subject.max_score || 100;
+                          const percentage = totalOutOf > 0 ? ((totalScore / totalOutOf) * 100) : (subject.percentage || 0);
+                          const letterGrade = subject.letter_grade || subject.grade || 'N/A';
+                          
                           return (
                             <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                              <td className="py-3 px-4 font-medium text-gray-900">{subject.subject_name}</td>
+                              <td className="py-3 px-4 font-medium text-gray-900">{subjectName}</td>
                               <td className="py-3 px-4 text-center">
-                                <Badge variant={subject.subject_type === 'core' ? 'success' : 'info'} className="text-xs">
-                                  {subject.subject_type}
+                                <Badge variant={subjectType === 'core' ? 'success' : 'info'} className="text-xs">
+                                  {subjectType}
                                 </Badge>
                               </td>
-                              <td className="py-3 px-4 text-center font-semibold text-gray-700">{subject.coefficient}</td>
+                              <td className="py-3 px-4 text-center font-semibold text-gray-700">{coefficient}</td>
                               <td className="py-3 px-4 text-center font-mono text-gray-900">
-                                {subject.total_score} / {subject.total_out_of}
+                                {totalScore} / {totalOutOf}
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <span className={`font-bold ${percentage >= 60 ? 'text-green-600' : 'text-red-600'}`}>
@@ -906,7 +1004,7 @@ export function ReportCardsPage() {
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <Badge variant={percentage >= 60 ? 'success' : 'danger'}>
-                                  {subject.letter_grade || 'N/A'}
+                                  {letterGrade}
                                 </Badge>
                               </td>
                             </tr>
@@ -1095,6 +1193,7 @@ export function ReportCardsPage() {
         </Dialog>
       )}
 
+
       {previewModalOpen && selectedReport && school && <Dialog isOpen={previewModalOpen} onClose={() => {
       setPreviewModalOpen(false);
       setSelectedReport(null);
@@ -1126,14 +1225,16 @@ export function ReportCardsPage() {
             </div>
           </div>
           <div ref={printRef} className="print:p-0">
-            <DynamicReportCard
-              studentId={selectedReport.student_id}
-              sequenceId={selectedReport.sequence_id}
-              termId={selectedReport.term_id}
-              academicYearId={selectedReport.academic_year_id}
-              schoolId={user?.school_id || ''}
-              transcriptType={transcriptType}
-            />
+            {selectedReport && (
+              <DynamicReportCard
+                studentId={selectedReport.student_id}
+                sequenceId={selectedReport.sequence_id}
+                termId={selectedReport.term_id}
+                academicYearId={selectedReport.academic_year_id}
+                schoolId={user?.school_id || ''}
+                transcriptType={transcriptType}
+              />
+            )}
           </div>
           <div className="flex items-center justify-end gap-2 mt-6 print:hidden">
             <Button variant="outline" onClick={() => {
