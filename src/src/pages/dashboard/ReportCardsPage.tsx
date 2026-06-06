@@ -11,8 +11,11 @@ import { Dialog } from '../../components/ui/Dialog';
 import { useAuth } from '../../hooks/useAuth';
 import { FileText, Download, Eye, Search, Filter, Award, Printer, X, Calendar, TrendingUp, TrendingDown, BarChart3, Users, BookOpen, Target, Clock } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExport';
-import { ReportCardPreview } from '../../components/reports/ReportCardPreview';
 import { DynamicReportCard } from '../../components/reports/DynamicReportCard';
+import { ResolvedTemplate, DEFAULT_TEMPLATE, resolveTemplate } from '../../types/reportTemplate';
+import { downloadElementPdf, reportsToZip, downloadBlob } from '../../utils/pdfExport';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
+import { AnalyticsTab } from '../../components/reports/AnalyticsTab';
 import { BarChart, Bar, LineChart, Line, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 interface ReportCard {
   id: string;
@@ -42,7 +45,7 @@ export function ReportCardsPage() {
   const [terms, setTerms] = useState<any[]>([]);
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [school, setSchool] = useState<any>(null);
-  const [template, setTemplate] = useState<any>(null);
+  const [template, setTemplate] = useState<ResolvedTemplate>(DEFAULT_TEMPLATE);
   const [selectedClassView, setSelectedClassView] = useState(''); // For main class view
   const [filterClass, setFilterClass] = useState('');
   const [filterScope, setFilterScope] = useState('');
@@ -67,6 +70,12 @@ export function ReportCardsPage() {
   const [selectedScopeForGeneration, setSelectedScopeForGeneration] = useState<'sequence' | 'term' | 'year'>('sequence');
   const [selectedPeriodForGeneration, setSelectedPeriodForGeneration] = useState('');
   const [generating, setGenerating] = useState(false);
+  // PDF export state
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [bulkExporting, setBulkExporting] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+  const [bulkTarget, setBulkTarget] = useState<ReportCard | null>(null);
+  const bulkReadyResolver = useRef<(() => void) | null>(null);
   const [stats, setStats] = useState({
     totalReports: 0,
     sequenceReports: 0,
@@ -95,12 +104,7 @@ export function ReportCardsPage() {
       if (yearsData.error) throw yearsData.error;
       if (reportsData.error) throw reportsData.error;
       setSchool(schoolData.data);
-      setTemplate(templateData.data?.config || {
-        showLogo: true,
-        showRank: true,
-        showAttendance: true,
-        showComments: true
-      });
+      setTemplate(resolveTemplate(templateData.data));
       const enrichedReports = await Promise.all((reportsData.data || []).map(async report => {
         const {
           data: studentData
@@ -221,6 +225,72 @@ export function ReportCardsPage() {
     downloadCSV(exportData, `report_cards_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
+  // Download the currently-previewed report card as a PDF.
+  const handleDownloadPdf = async () => {
+    const el = document.getElementById('dynamic-report-card');
+    if (!el || !selectedReport) return;
+    try {
+      setPdfBusy(true);
+      const name = `report_${selectedReport.student_name}_${selectedReport.sequence_name || selectedReport.term_name || selectedReport.year_name || ''}`.trim();
+      await downloadElementPdf(el, name);
+    } catch (err: any) {
+      console.error('PDF export failed:', err);
+      setError('Failed to generate PDF. Please try again.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  // Bulk-export all filtered reports as a ZIP of individual PDFs.
+  // Each report is rendered once through a shared off-screen DynamicReportCard
+  // (bulkTarget); onReady resolves bulkReadyResolver so html2canvas captures the
+  // finished card rather than the loading spinner.
+  const handleBulkPdf = async () => {
+    if (filteredReports.length === 0) return;
+    if (filteredReports.length > 60 &&
+        !window.confirm(`You are about to export ${filteredReports.length} report cards. This may take a while. Continue?`)) {
+      return;
+    }
+    try {
+      setBulkExporting(true);
+      setError('');
+      setBulkProgress({ done: 0, total: filteredReports.length });
+
+      const items = filteredReports.map(report => ({ name: bulkItemName(report), report }));
+      const blob = await reportsToZip(
+        items,
+        async ({ report }) => {
+          // Render this report off-screen and wait for it to finish loading.
+          await new Promise<void>(resolve => {
+            bulkReadyResolver.current = resolve;
+            setBulkTarget(report);
+          });
+          // Give the browser one frame to paint the freshly-set state.
+          await new Promise(r => requestAnimationFrame(() => r(null)));
+          const el = document.getElementById('dynamic-report-card');
+          if (!el) throw new Error('Report element not found');
+          return el;
+        },
+        (done, total) => setBulkProgress({ done, total })
+      );
+
+      downloadBlob(blob, `report_cards_${new Date().toISOString().split('T')[0]}.zip`);
+      setSuccess(`Exported ${filteredReports.length} report card(s) to ZIP.`);
+    } catch (err: any) {
+      console.error('Bulk PDF export failed:', err);
+      setError('Failed to export report cards. Please try again.');
+    } finally {
+      setBulkExporting(false);
+      setBulkTarget(null);
+      bulkReadyResolver.current = null;
+      setBulkProgress({ done: 0, total: 0 });
+    }
+  };
+
+  // Map a ReportCard to a filename for the bulk ZIP.
+  const bulkItemName = (report: ReportCard) =>
+    `${report.student_name}_${report.sequence_name || report.term_name || report.year_name || report.scope}`;
+
   const handleGenerateClassReports = async () => {
     if (!selectedClassForGeneration || !selectedPeriodForGeneration || !user?.school_id) {
       setError('Please select a class and period');
@@ -324,6 +394,17 @@ export function ReportCardsPage() {
           </Button>
             <Button variant="outline" onClick={handleExport} disabled={filteredReports.length === 0} leftIcon={<Download className="h-4 w-4" />}>
               Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleBulkPdf}
+              disabled={filteredReports.length === 0 || bulkExporting}
+              isLoading={bulkExporting}
+              leftIcon={<Download className="h-4 w-4" />}
+            >
+              {bulkExporting
+                ? `Exporting ${bulkProgress.done}/${bulkProgress.total}…`
+                : 'Download All (ZIP)'}
             </Button>
           </div>
         </div>
@@ -513,10 +594,18 @@ export function ReportCardsPage() {
           </CardContent>
         </Card>}
 
-      {/* Analytics Charts - Always Visible */}
-      {filteredReports.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
+      <Tabs defaultValue="reports">
+        <TabsList>
+          <TabsTrigger value="reports">
+            <FileText className="h-4 w-4 mr-2" /> Reports
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="analytics" className="mt-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <BarChart3 className="h-6 w-6 text-indigo-600" />
               Performance Analytics
@@ -530,80 +619,10 @@ export function ReportCardsPage() {
               Showing {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
             </p>
           </div>
+          <AnalyticsTab reports={filteredReports} colorScheme={template.colorScheme} />
+        </TabsContent>
 
-          {/* Performance Distribution & Top Performers */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Performance Distribution Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
-                  Performance Distribution
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[
-                    { range: '0-40%', count: filteredReports.filter(r => r.data?.final_average < 40).length },
-                    { range: '40-50%', count: filteredReports.filter(r => r.data?.final_average >= 40 && r.data?.final_average < 50).length },
-                    { range: '50-60%', count: filteredReports.filter(r => r.data?.final_average >= 50 && r.data?.final_average < 60).length },
-                    { range: '60-70%', count: filteredReports.filter(r => r.data?.final_average >= 60 && r.data?.final_average < 70).length },
-                    { range: '70-80%', count: filteredReports.filter(r => r.data?.final_average >= 70 && r.data?.final_average < 80).length },
-                    { range: '80-90%', count: filteredReports.filter(r => r.data?.final_average >= 80 && r.data?.final_average < 90).length },
-                    { range: '90-100%', count: filteredReports.filter(r => r.data?.final_average >= 90).length },
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="range" fontSize={12} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" name="Students" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Top Performers */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Award className="h-5 w-5 text-amber-600" />
-                  Top 10 Performers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {filteredReports
-                    .filter(r => r.data?.final_average)
-                    .sort((a, b) => (b.data?.final_average || 0) - (a.data?.final_average || 0))
-                    .slice(0, 10)
-                    .map((report, index) => (
-                      <div key={report.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-sm ${
-                            index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-gray-300'
-                          }`}>
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 text-sm">{report.student_name}</p>
-                            <p className="text-xs text-gray-500">{report.class_name}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">{report.data.final_average.toFixed(1)}%</p>
-                          {report.data.letter_grade && (
-                            <Badge variant="success" className="text-xs">{report.data.letter_grade}</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
+        <TabsContent value="reports" className="mt-4">
       {/* Report Cards List */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -833,6 +852,8 @@ export function ReportCardsPage() {
           </div>
         )}
       </div>
+        </TabsContent>
+      </Tabs>
 
       {viewModalOpen && selectedReport && selectedReport.data && (
         <Dialog 
@@ -845,9 +866,6 @@ export function ReportCardsPage() {
           size="xl"
         >
           <div className="space-y-6 max-h-[85vh] overflow-y-auto">
-            {/* Debug: Log the data structure */}
-            {console.log('Report Data:', selectedReport.data)}
-            {console.log('Subjects:', selectedReport.data.subjects)}
             {/* Header Section with Student Info */}
             <div className="bg-white border-b-4 border-indigo-600 rounded-lg p-6 shadow-sm">
               <div className="flex items-start justify-between">
@@ -1312,6 +1330,9 @@ export function ReportCardsPage() {
                 academicYearId={selectedReport.academic_year_id}
                 schoolId={user?.school_id || ''}
                 transcriptType={transcriptType}
+                rank={selectedReport.data?.rank}
+                classSize={selectedReport.data?.class_size}
+                template={template}
               />
             )}
           </div>
@@ -1322,21 +1343,50 @@ export function ReportCardsPage() {
         }}>
               Close
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownloadPdf}
+              isLoading={pdfBusy}
+              disabled={pdfBusy}
+              leftIcon={<Download className="h-4 w-4" />}
+            >
+              {pdfBusy ? 'Generating…' : 'Download PDF'}
+            </Button>
             <Button onClick={() => window.print()} leftIcon={<Printer className="h-4 w-4" />}>
               Print {transcriptType === 'official' ? 'Official Transcript' : 'Report Card'}
             </Button>
           </div>
         </Dialog>}
 
+      {/* Off-screen host for bulk PDF rendering. Renders one report at a time;
+          onReady resolves the pending promise so html2canvas captures the finished card. */}
+      {bulkTarget && (
+        <div aria-hidden style={{ position: 'fixed', left: -10000, top: 0, width: 1024, background: '#fff', zIndex: -1 }}>
+          <DynamicReportCard
+            key={bulkTarget.id}
+            studentId={bulkTarget.student_id}
+            sequenceId={bulkTarget.sequence_id}
+            termId={bulkTarget.term_id}
+            academicYearId={bulkTarget.academic_year_id}
+            schoolId={user?.school_id || ''}
+            transcriptType={transcriptType}
+            rank={bulkTarget.data?.rank}
+            classSize={bulkTarget.data?.class_size}
+            template={template}
+            onReady={() => bulkReadyResolver.current?.()}
+          />
+        </div>
+      )}
+
       <style>{`
         @media print {
           body * {
             visibility: hidden;
           }
-          #report-card-preview, #report-card-preview * {
+          #dynamic-report-card, #dynamic-report-card * {
             visibility: visible;
           }
-          #report-card-preview {
+          #dynamic-report-card {
             position: absolute;
             left: 0;
             top: 0;

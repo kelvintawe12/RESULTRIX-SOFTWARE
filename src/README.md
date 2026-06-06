@@ -1,4 +1,3 @@
-
 # EduMaster - School Management SaaS Platform
 
 A comprehensive, modern school management system built with React, TypeScript, and Supabase. Streamline your educational institution's operations with powerful tools for academics, finances, and administration.
@@ -365,3 +364,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Status**: Production Ready
 - **Last Updated**: 2024
 - **Maintained**: Yes
+
+# Project Mission
+
+Our mission is to build a smart, dynamic school management system that leverages automated data aggregation and intelligent UI techniques to generate, display, and manage student report cards. The system ensures:
+
+- **Accurate, real-time academic data**: All grades, ranks, and statistics are fetched and calculated directly from the backend, eliminating manual errors.
+- **Dynamic mapping**: Sequences, terms, and academic years are mapped automatically based on database structure, supporting any curriculum or school setup.
+- **Consistent, intelligent UI**: Every report card view (list, modal, print) uses a unified, data-driven approach for displaying performance, rank, attendance, and analytics.
+- **Advanced filtering and analytics**: Users can filter, analyze, and export report cards using smart, context-aware tools.
+- **Automation and reliability**: The system minimizes manual intervention, using smart techniques to ensure data integrity and ease of use for all stakeholders.
+
+This approach empowers schools to manage academic records efficiently, with confidence in the accuracy and intelligence of every report card generated.
