@@ -16,7 +16,7 @@ import { ResolvedTemplate, DEFAULT_TEMPLATE, resolveTemplate } from '../../types
 import { downloadElementPdf, reportsToZip, downloadBlob } from '../../utils/pdfExport';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { AnalyticsTab } from '../../components/reports/AnalyticsTab';
-import { BarChart, Bar, LineChart, Line, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { BarChart, Bar, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 interface ReportCard {
   id: string;
   student_id: string;

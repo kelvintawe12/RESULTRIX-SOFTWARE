@@ -45,7 +45,7 @@ export function AcademicManagementPage() {
         ascending: false
       }), supabase.from('terms').select('*, academic_years!inner(school_id)').eq('academic_years.school_id', user?.school_id).order('start_date', {
         ascending: false
-      }), supabase.from('sequences').select('*, terms!inner(academic_years!inner(school_id))').eq('terms.academic_years.school_id', user?.school_id), supabase.from('classes').select('*').eq('school_id', user?.school_id).order('name'), supabase.from('schools').select('auto_update_periods').eq('id', user?.school_id).single()]);
+      }), supabase.from('sequences').select('*, terms!inner(academic_years!inner(school_id))').eq('terms.academic_years.school_id', user?.school_id), supabase.from('classes').select('*').eq('school_id', user?.school_id).order('name'), supabase.from('schools').select('*').eq('id', user?.school_id).maybeSingle()]);
       if (yearsData.error) throw yearsData.error;
       if (termsData.error) throw termsData.error;
       if (sequencesData.error) throw sequencesData.error;
@@ -54,7 +54,8 @@ export function AcademicManagementPage() {
       setTerms(termsData.data || []);
       setSequences(sequencesData.data || []);
       setClasses(classesData.data || []);
-      setSchoolSettings(schoolData.data);
+      // `auto_update_periods` may not exist on older schemas; default to false.
+      setSchoolSettings(schoolData.data ? { auto_update_periods: false, ...schoolData.data } : { auto_update_periods: false });
       calculateTriggerStatus(yearsData.data, termsData.data, sequencesData.data);
     } catch (err: any) {
       console.error('Error fetching data:', err);

@@ -1,8 +1,10 @@
-import React from 'react';
 import './index.css';
-import { render } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import App from './src/App';
-render(<App />, document.getElementById('root'));
+
+const container = document.getElementById('root');
+if (!container) throw new Error('Root element #root not found');
+createRoot(container).render(<App />);
 
 // Register service worker for PWA (only in production)
 if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
