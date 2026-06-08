@@ -294,7 +294,7 @@ export function StudentAcademicRecordsPage() {
   // Fetch academic years
   const fetchAcademicYears = async () => {
     try {
-      const { data, error } = await supabase.from('academic_years').select('id, year_name').eq('school_id', user.school_id).order('year_name');
+      const { data, error } = await supabase.from('academic_years').select('id, year_name').eq('school_id', user?.school_id).order('year_name');
       if (error) throw error;
       setAcademicYears(data || []);
     } catch (err) {

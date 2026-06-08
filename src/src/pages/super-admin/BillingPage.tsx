@@ -144,21 +144,35 @@ export function BillingPage() {
         const price = Number(s.subscription_plans?.price || 0);
         return sum + (s.subscription_plans?.interval === 'year' ? price / 12 : price);
       }, 0);
-      // Mock churn rate for now as we need historical data
-      const churnRate = 2.4;
+      // Churn rate: cancelled subscriptions as a share of all subscriptions.
+      const totalSubs = (subsData || []).length;
+      const cancelledSubs = (subsData || []).filter(s => s.status === 'canceled' || s.status === 'cancelled').length;
+      const churnRate = totalSubs > 0 ? (cancelledSubs / totalSubs) * 100 : 0;
       setStats({
         total_revenue: totalRevenue,
         active_subscriptions: activeSubs.length,
         mrr,
-        churn_rate: churnRate
+        churn_rate: parseFloat(churnRate.toFixed(1))
       });
-      // Generate Mock Revenue Trend Data (since we might not have 6 months of history yet)
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-      const mockTrend = months.map((month, i) => ({
-        name: month,
-        revenue: mrr * (0.8 + i * 0.1) + Math.random() * 1000
-      }));
-      setRevenueData(mockTrend);
+
+      // Real revenue trend: sum paid invoices into the last 6 calendar months.
+      const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const buckets: { key: string; name: string; revenue: number }[] = [];
+      const ref = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+        buckets.push({ key: `${d.getFullYear()}-${d.getMonth()}`, name: monthLabels[d.getMonth()], revenue: 0 });
+      }
+      (invData || []).forEach(inv => {
+        if (inv.status !== 'paid') return;
+        const dateStr = inv.paid_at || inv.created_at;
+        if (!dateStr) return;
+        const d = new Date(dateStr);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        const bucket = buckets.find(b => b.key === key);
+        if (bucket) bucket.revenue += Number(inv.amount) || 0;
+      });
+      setRevenueData(buckets.map(({ name, revenue }) => ({ name, revenue })));
     } catch (err: any) {
       console.error('Error fetching billing data:', err);
       setError('Failed to load billing information. Please try again.');

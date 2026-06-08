@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Tabs } from '../../components/ui/Tabs';
-import { Table } from '../../components/ui/Table';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../hooks/useAuth';
@@ -74,11 +73,13 @@ export function TeacherClassDetailsPage() {
           ascending: false
         });
         if (marksError) throw marksError;
-        // Flatten the nested structure
-        const flattenedMarks = (marksData || []).map(mark => ({
-          ...mark,
-          students: mark.enrollments?.students
-        }));
+        // Flatten the nested structure. Supabase may return joined relations as
+        // either an object or a single-element array depending on the relationship.
+        const flattenedMarks = (marksData || []).map(mark => {
+          const enrollment = Array.isArray(mark.enrollments) ? mark.enrollments[0] : mark.enrollments;
+          const student = enrollment && (Array.isArray(enrollment.students) ? enrollment.students[0] : enrollment.students);
+          return { ...mark, students: student };
+        });
         setMarks(flattenedMarks || []);
       } else {
         setMarks([]);
@@ -146,13 +147,13 @@ export function TeacherClassDetailsPage() {
         </span>
   }, {
     header: 'Mark',
-    accessor: 'mark' as const,
-    render: (row: any) => <span className="font-semibold text-slate-900">{row.mark}/100</span>
+    accessor: 'score' as const,
+    render: (row: any) => <span className="font-semibold text-slate-900">{row.score}/{row.out_of}</span>
   }, {
     header: 'Status',
-    accessor: 'status' as const,
-    render: (row: any) => <Badge variant={row.status === 'approved' ? 'success' : row.status === 'pending' ? 'warning' : 'secondary'}>
-          {row.status}
+    accessor: 'approved' as const,
+    render: (row: any) => <Badge variant={row.approved ? 'success' : 'warning'}>
+          {row.approved ? 'Approved' : 'Pending'}
         </Badge>
   }, {
     header: 'Date',
@@ -199,7 +200,9 @@ export function TeacherClassDetailsPage() {
         </Button>
       </div>;
   }
-  const avgMark = marks.length > 0 ? marks.reduce((sum, m) => sum + (m.mark || 0), 0) / marks.length : 0;
+  const avgMark = marks.length > 0
+    ? marks.reduce((sum, m) => sum + (m.out_of > 0 ? (m.score / m.out_of) * 100 : 0), 0) / marks.length
+    : 0;
   const attendanceRate = attendance.length > 0 ? attendance.filter(a => a.status === 'present').length / attendance.length * 100 : 0;
   return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex items-center gap-4">
@@ -305,32 +308,69 @@ export function TeacherClassDetailsPage() {
       </Card>
 
       {/* Tabs */}
-      <Tabs tabs={[{
-      id: 'students',
-      label: `Students (${students.length})`
-    }, {
-      id: 'marks',
-      label: `Marks (${marks.length})`
-    }, {
-      id: 'attendance',
-      label: `Attendance (${attendance.length})`
-    }]} activeTab={activeTab} onChange={setActiveTab} />
+      <div className="inline-flex rounded-lg bg-slate-100 p-1" role="tablist">
+        {[
+          { id: 'students', label: `Students (${students.length})` },
+          { id: 'marks', label: `Marks (${marks.length})` },
+          { id: 'attendance', label: `Attendance (${attendance.length})` },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              activeTab === tab.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       {/* Content */}
       <Card>
         <CardContent className="p-0">
-          {activeTab === 'students' && (students.length > 0 ? <Table data={students} columns={studentsColumns} /> : <div className="text-center py-12 text-slate-500">
-                No students enrolled in this class yet.
-              </div>)}
+          {activeTab === 'students' && (students.length > 0
+            ? renderTable(studentsColumns, students)
+            : <div className="text-center py-12 text-slate-500">No students enrolled in this class yet.</div>)}
 
-          {activeTab === 'marks' && (marks.length > 0 ? <Table data={marks} columns={marksColumns} /> : <div className="text-center py-12 text-slate-500">
-                No marks recorded yet.
-              </div>)}
+          {activeTab === 'marks' && (marks.length > 0
+            ? renderTable(marksColumns, marks)
+            : <div className="text-center py-12 text-slate-500">No marks recorded yet.</div>)}
 
-          {activeTab === 'attendance' && (attendance.length > 0 ? <Table data={attendance} columns={attendanceColumns} /> : <div className="text-center py-12 text-slate-500">
-                No attendance records yet.
-              </div>)}
+          {activeTab === 'attendance' && (attendance.length > 0
+            ? renderTable(attendanceColumns, attendance)
+            : <div className="text-center py-12 text-slate-500">No attendance records yet.</div>)}
         </CardContent>
       </Card>
     </div>;
+}
+
+// Render a column definition array against rows using the shared Table primitives.
+function renderTable(
+  columns: { header: string; render: (row: any) => React.ReactNode }[],
+  rows: any[]
+) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map((col, i) => (
+            <TableHead key={i}>{col.header}</TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row, ri) => (
+          <TableRow key={row.id ?? ri}>
+            {columns.map((col, ci) => (
+              <TableCell key={ci}>{col.render(row)}</TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }

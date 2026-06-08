@@ -1,17 +1,39 @@
 import React from 'react';
+
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+// Synonyms used across the codebase, mapped to the five real variants below.
+type BadgeVariantInput = BadgeVariant | 'primary' | 'secondary' | 'default' | 'error' | 'destructive' | 'outline';
+
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+  variant?: BadgeVariantInput;
   size?: 'sm' | 'md';
   className?: string;
 }
+
+function normalizeVariant(variant: BadgeVariantInput): BadgeVariant {
+  switch (variant) {
+    case 'primary':
+      return 'info';
+    case 'error':
+    case 'destructive':
+      return 'danger';
+    case 'secondary':
+    case 'default':
+    case 'outline':
+      return 'neutral';
+    default:
+      return variant;
+  }
+}
+
 export function Badge({
   children,
   variant = 'neutral',
   size = 'md',
   className = ''
 }: BadgeProps) {
-  const variants = {
+  const variants: Record<BadgeVariant, string> = {
     success: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     warning: 'bg-amber-100 text-amber-700 border-amber-200',
     danger: 'bg-rose-100 text-rose-700 border-rose-200',
@@ -24,8 +46,8 @@ export function Badge({
   };
   return <span className={`
       inline-flex items-center font-medium rounded-full border
-      ${variants[variant]} 
-      ${sizes[size]} 
+      ${variants[normalizeVariant(variant)]}
+      ${sizes[size]}
       ${className}
     `}>
       {children}

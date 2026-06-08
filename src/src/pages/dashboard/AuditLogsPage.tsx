@@ -218,7 +218,7 @@ export function AuditLogsPage() {
               label: 'All Actions'
             }, ...actionTypes.map(action => ({
               value: action,
-              label: action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+              label: action.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
             }))]} />
               <Button variant="outline" size="icon">
                 <Filter className="h-4 w-4" />

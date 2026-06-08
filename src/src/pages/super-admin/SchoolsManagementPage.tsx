@@ -403,7 +403,7 @@ export function SchoolsManagementPage() {
         </div>
         <div className="w-full h-[180px] sm:h-[300px] md:h-[350px] lg:h-[400px]" id="platform-growth-chart">
           <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'area' && (
+            {chartType === 'area' ? (
               <AreaChart data={chartData} margin={{ top: 30, right: 30, left: 10, bottom: 40 }}>
                 <defs>
                   <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">

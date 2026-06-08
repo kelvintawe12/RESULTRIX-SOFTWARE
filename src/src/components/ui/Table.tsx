@@ -1,11 +1,48 @@
 import React from 'react';
-export function Table({
-  children,
-  className = ''
-}: {
-  children: React.ReactNode;
+
+export interface TableColumn {
+  header: string;
+  accessor?: string;
+  render?: (row: any) => React.ReactNode;
   className?: string;
-}) {
+}
+
+interface TableProps {
+  children?: React.ReactNode;
+  className?: string;
+  // Data-driven mode:
+  columns?: TableColumn[];
+  data?: any[];
+}
+
+export function Table({ children, className = '', columns, data }: TableProps) {
+  // Data-driven mode: render rows from a column definition + data array.
+  if (columns && data) {
+    return (
+      <div className={`w-full overflow-x-auto ${className}`}>
+        <table className="w-full text-left border-collapse">
+          <TableHeader>
+            <TableRow>
+              {columns.map((col, i) => (
+                <TableHead key={i} className={col.className}>{col.header}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row, ri) => (
+              <TableRow key={row?.id ?? ri}>
+                {columns.map((col, ci) => (
+                  <TableCell key={ci} className={col.className}>
+                    {col.render ? col.render(row) : (col.accessor ? row?.[col.accessor] : null)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </table>
+      </div>
+    );
+  }
   return <div className={`w-full overflow-x-auto ${className}`}>
       <table className="w-full text-left border-collapse">{children}</table>
     </div>;

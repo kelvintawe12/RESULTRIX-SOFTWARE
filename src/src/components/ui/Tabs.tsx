@@ -12,21 +12,84 @@ function useTabsContext() {
   }
   return context;
 }
-// Main Tabs component
+export interface TabItem {
+  id: string;
+  label: React.ReactNode;
+  content?: React.ReactNode;
+}
+
+// Main Tabs component.
+// Supports two styles:
+//  1. Compound: <Tabs defaultValue><TabsList/>…<TabsContent/></Tabs>
+//  2. Simple:   <Tabs tabs={[{id,label,content}]} activeTab onChange />
 interface TabsProps {
-  defaultValue: string;
+  defaultValue?: string;
   value?: string;
   onValueChange?: (value: string) => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
+  // Simple-mode props:
+  tabs?: TabItem[];
+  activeTab?: string;
+  onChange?: (id: string) => void;
 }
 export function Tabs({
-  defaultValue,
+  defaultValue = '',
+  value: controlledValue,
+  onValueChange,
+  children,
+  className = '',
+  tabs,
+  activeTab,
+  onChange
+}: TabsProps) {
+  // Simple mode: render a button tab bar + the active tab's content.
+  if (tabs) {
+    const current = activeTab ?? tabs[0]?.id;
+    return (
+      <div className={`w-full ${className}`}>
+        <div className="inline-flex h-10 items-center justify-center rounded-md bg-slate-100 p-1" role="tablist">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={current === tab.id}
+              onClick={() => onChange?.(tab.id)}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${current === tab.id ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {tabs.find(t => t.id === current)?.content && (
+          <div role="tabpanel" className="mt-2">{tabs.find(t => t.id === current)?.content}</div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <CompoundTabs defaultValue={defaultValue} value={controlledValue} onValueChange={onValueChange} className={className}>
+      {children}
+    </CompoundTabs>
+  );
+}
+
+// Compound implementation. Hooks live here so they are never conditional
+// relative to the simple-mode early return above.
+function CompoundTabs({
+  defaultValue = '',
   value: controlledValue,
   onValueChange,
   children,
   className = ''
-}: TabsProps) {
+}: {
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  children?: React.ReactNode;
+  className?: string;
+}) {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const value = controlledValue !== undefined ? controlledValue : internalValue;
   const handleValueChange = (newValue: string) => {

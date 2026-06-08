@@ -78,14 +78,15 @@ export function AcademicsPage() {
           const {
             data: teacherAssignment
           } = await supabase.from('teacher_assignments').select('teacher_id, users!teacher_assignments_teacher_id_fkey(id, full_name)').eq('class_id', cls.id).limit(1).maybeSingle();
+          const teacherUser = Array.isArray(teacherAssignment?.users) ? teacherAssignment?.users[0] : teacherAssignment?.users;
           return {
             id: cls.id,
             name: cls.name,
             description: cls.description,
             student_count: studentCount || 0,
             capacity: 40,
-            teacher_name: teacherAssignment?.users?.full_name || 'Unassigned',
-            teacher_id: teacherAssignment?.users?.id || null,
+            teacher_name: teacherUser?.full_name || 'Unassigned',
+            teacher_id: teacherUser?.id || null,
             subject_count: subjectCount || 0
           };
         }));
@@ -427,7 +428,7 @@ export function AcademicsPage() {
       </Tabs>
 
       {/* Modals */}
-      <ClassDetailsModal isOpen={isClassModalOpen} onClose={() => setIsClassModalOpen(false)} classData={selectedClass} />
-      <SubjectDetailsModal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} subjectData={selectedSubject} />
+      <ClassDetailsModal isOpen={isClassModalOpen} onClose={() => setIsClassModalOpen(false)} classData={selectedClass as any} />
+      <SubjectDetailsModal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} subjectData={selectedSubject as any} />
     </div>;
 }

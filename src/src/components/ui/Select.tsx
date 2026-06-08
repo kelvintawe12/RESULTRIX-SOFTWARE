@@ -1,9 +1,9 @@
-import React, { useState, forwardRef, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 // Context for Select state
 interface SelectContextValue {
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (value: string, displayValue?: string) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
   displayValue: string;
@@ -17,28 +17,104 @@ function useSelectContext() {
   }
   return context;
 }
-// Main Select component
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+// Main Select component.
+// Supports two usage styles:
+//  1. Compound: <Select value onValueChange><SelectTrigger/>…<SelectItem/></Select>
+//  2. Simple:   <Select label options value onChange /> (renders a native <select>)
 interface SelectProps {
   value?: string;
   onValueChange?: (value: string) => void;
   defaultValue?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  // Simple-mode props:
+  label?: string;
+  options?: SelectOption[];
+  onChange?: (e: any) => void;
+  placeholder?: string;
+  required?: boolean;
+  name?: string;
+  id?: string;
+  error?: string;
+  className?: string;
+  disabled?: boolean;
 }
 export function Select({
   value: controlledValue,
   onValueChange,
   defaultValue = '',
-  children
+  children,
+  label,
+  options,
+  onChange,
+  placeholder,
+  required,
+  name,
+  id,
+  error,
+  className = '',
+  disabled
 }: SelectProps) {
+  // Simple mode: render a native <select> when `options` are provided.
+  // (No hooks here — keeps the compound mode's hooks unconditional.)
+  if (options) {
+    return (
+      <div className="w-full">
+        {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
+        <select
+          id={id}
+          name={name}
+          value={controlledValue ?? defaultValue}
+          required={required}
+          disabled={disabled}
+          onChange={e => {
+            onChange?.(e);
+            onValueChange?.(e.target.value);
+          }}
+          className={`w-full px-3 py-2 rounded-lg border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
+        >
+          {placeholder && <option value="">{placeholder}</option>}
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
+      </div>
+    );
+  }
+  return (
+    <CompoundSelect value={controlledValue} onValueChange={onValueChange} defaultValue={defaultValue}>
+      {children}
+    </CompoundSelect>
+  );
+}
+
+// Compound (custom dropdown) implementation. Hooks live here so they are never
+// conditional relative to the simple-mode early return above.
+function CompoundSelect({
+  value: controlledValue,
+  onValueChange,
+  defaultValue = '',
+  children
+}: {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  defaultValue?: string;
+  children?: React.ReactNode;
+}) {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [displayValue, setDisplayValue] = useState('');
   const [open, setOpen] = useState(false);
   const value = controlledValue !== undefined ? controlledValue : internalValue;
-  const handleValueChange = (newValue: string, newDisplayValue: string) => {
+  const handleValueChange = (newValue: string, newDisplayValue?: string) => {
     if (controlledValue === undefined) {
       setInternalValue(newValue);
     }
-    setDisplayValue(newDisplayValue);
+    setDisplayValue(newDisplayValue ?? newValue);
     onValueChange?.(newValue);
     setOpen(false);
   };

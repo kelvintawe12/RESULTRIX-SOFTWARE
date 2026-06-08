@@ -59,59 +59,74 @@ export function TeacherReportsPage() {
       if (!assignment) return;
       const assignmentDetails = await supabase.from('teacher_assignments').select('subject_id, class_id').eq('id', selectedAssignment).single();
       if (!assignmentDetails.data) return;
-      // Fetch marks distribution
+      const { subject_id, class_id } = assignmentDetails.data;
+
+      // Marks live on the `marks` table, linked to a student+subject through
+      // `enrollments`. Filter enrollments to this subject and (via the student)
+      // this class. Scores are score/out_of, not a single `mark` column.
       const {
-        data: marksData
-      } = await supabase.from('marks').select('mark, students(full_name)').eq('subject_id', assignmentDetails.data.subject_id).eq('class_id', assignmentDetails.data.class_id);
-      // Fetch attendance data
-      const {
-        data: attendanceData
-      } = await supabase.from('attendance').select('status, date').eq('subject_id', assignmentDetails.data.subject_id).eq('class_id', assignmentDetails.data.class_id);
-      // Process data
-      const marksDistribution = [{
-        range: '0-40',
-        count: 0
-      }, {
-        range: '41-50',
-        count: 0
-      }, {
-        range: '51-60',
-        count: 0
-      }, {
-        range: '61-70',
-        count: 0
-      }, {
-        range: '71-80',
-        count: 0
-      }, {
-        range: '81-90',
-        count: 0
-      }, {
-        range: '91-100',
-        count: 0
-      }];
-      marksData?.forEach(m => {
-        if (m.mark <= 40) marksDistribution[0].count++;else if (m.mark <= 50) marksDistribution[1].count++;else if (m.mark <= 60) marksDistribution[2].count++;else if (m.mark <= 70) marksDistribution[3].count++;else if (m.mark <= 80) marksDistribution[4].count++;else if (m.mark <= 90) marksDistribution[5].count++;else marksDistribution[6].count++;
+        data: marksData,
+        error: marksError
+      } = await supabase
+        .from('marks')
+        .select('score, out_of, attendance_present, attendance_total, enrollments!inner(subject_id, students!inner(full_name, class_id))')
+        .eq('enrollments.subject_id', subject_id)
+        .eq('enrollments.students.class_id', class_id);
+      if (marksError) throw marksError;
+
+      const rows = (marksData || []).map((m: any) => {
+        const enrollment = Array.isArray(m.enrollments) ? m.enrollments[0] : m.enrollments;
+        const student = enrollment && (Array.isArray(enrollment.students) ? enrollment.students[0] : enrollment.students);
+        const percentage = m.out_of > 0 ? (m.score / m.out_of) * 100 : 0;
+        return {
+          name: student?.full_name || 'Unknown',
+          percentage,
+          attendance_present: m.attendance_present || 0,
+          attendance_total: m.attendance_total || 0,
+        };
       });
-      const avgMark = marksData && marksData.length > 0 ? marksData.reduce((sum, m) => sum + (m.mark || 0), 0) / marksData.length : 0;
-      const topPerformers = marksData?.sort((a, b) => (b.mark || 0) - (a.mark || 0)).slice(0, 5).map(m => ({
-        name: m.students?.full_name || 'Unknown',
-        mark: m.mark
-      })) || [];
-      const attendanceStats = attendanceData ? {
-        present: attendanceData.filter(a => a.status === 'present').length,
-        absent: attendanceData.filter(a => a.status === 'absent').length
-      } : {
-        present: 0,
-        absent: 0
-      };
+
+      // Distribution by percentage band.
+      const marksDistribution = [
+        { range: '0-40', count: 0 },
+        { range: '41-50', count: 0 },
+        { range: '51-60', count: 0 },
+        { range: '61-70', count: 0 },
+        { range: '71-80', count: 0 },
+        { range: '81-90', count: 0 },
+        { range: '91-100', count: 0 },
+      ];
+      rows.forEach(r => {
+        const p = r.percentage;
+        if (p <= 40) marksDistribution[0].count++;
+        else if (p <= 50) marksDistribution[1].count++;
+        else if (p <= 60) marksDistribution[2].count++;
+        else if (p <= 70) marksDistribution[3].count++;
+        else if (p <= 80) marksDistribution[4].count++;
+        else if (p <= 90) marksDistribution[5].count++;
+        else marksDistribution[6].count++;
+      });
+
+      const avgMark = rows.length > 0
+        ? rows.reduce((sum, r) => sum + r.percentage, 0) / rows.length
+        : 0;
+      const topPerformers = [...rows]
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 5)
+        .map(r => ({ name: r.name, mark: parseFloat(r.percentage.toFixed(1)) }));
+
+      // Attendance is aggregated from the marks rows (present vs missed days).
+      const present = rows.reduce((sum, r) => sum + r.attendance_present, 0);
+      const total = rows.reduce((sum, r) => sum + r.attendance_total, 0);
+      const attendanceStats = { present, absent: Math.max(0, total - present) };
+
       setReportData({
         marksDistribution,
         avgMark,
         topPerformers,
         attendanceStats,
-        totalMarks: marksData?.length || 0,
-        totalAttendance: attendanceData?.length || 0
+        totalMarks: rows.length,
+        totalAttendance: total,
       });
     } catch (err: any) {
       console.error('Error fetching report data:', err);

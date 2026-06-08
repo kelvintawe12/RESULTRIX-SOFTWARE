@@ -89,7 +89,7 @@ export async function recordPayment(params: RecordPaymentParams): Promise<Record
       student: {
         name: student.full_name,
         admissionNumber: student.admission_number,
-        class: student.classes?.name
+        class: (Array.isArray(student.classes) ? student.classes[0] : student.classes)?.name
       },
       payment: {
         amount: amount,

@@ -83,7 +83,7 @@ export function PaymentsPage() {
           id: p.id,
           receiptId: `PAY-${p.id.slice(0, 8).toUpperCase()}`,
           student: student?.full_name || 'Unknown',
-          class: student?.classes?.name || 'N/A',
+          class: (Array.isArray(student?.classes) ? student?.classes[0] : student?.classes)?.name || 'N/A',
           amount: p.amount,
           date: new Date(p.date).toLocaleDateString(),
           method: p.method,
@@ -137,7 +137,7 @@ export function PaymentsPage() {
         methodCounts[method] = (methodCounts[method] || 0) + 1;
       });
       const methodsData = Object.entries(methodCounts).map(([name, value], i) => ({
-        name: name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        name: name.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
         value,
         color: ['#4F46E5', '#10B981', '#F59E0B', '#6366F1', '#EC4899'][i % 5]
       }));
@@ -436,7 +436,7 @@ export function PaymentsPage() {
                           <div className="flex items-center gap-2">
                             {payment.method === 'credit_card' && <CreditCard className="h-3 w-3 text-gray-500" />}
                             {payment.method === 'cash' && <DollarSign className="h-3 w-3 text-gray-500" />}
-                            {payment.method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {payment.method.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                           </div>
                         </td>
                         <td className="p-3">

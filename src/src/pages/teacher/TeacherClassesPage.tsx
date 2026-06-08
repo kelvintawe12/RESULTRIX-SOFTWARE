@@ -77,12 +77,17 @@ export function TeacherClassesPage() {
           count: 'exact',
           head: true
         }).eq('class_id', assignment.class_id);
+        const subj = Array.isArray(assignment.subjects) ? assignment.subjects[0] : assignment.subjects;
+        const cls = Array.isArray(assignment.classes) ? assignment.classes[0] : assignment.classes;
         return {
           ...assignment,
+          status: (assignment as any).status ?? 'active',
+          subjects: subj ?? { name: '', coefficient: 0, subject_type: '' },
+          classes: cls ?? { name: '', description: null },
           studentCount: count || 0
         };
       }));
-      setAssignments(assignmentsWithStats);
+      setAssignments(assignmentsWithStats as ClassAssignment[]);
     } catch (err: any) {
       console.error('Error fetching teacher assignments:', err);
       setError('Failed to load your classes');
@@ -90,7 +95,16 @@ export function TeacherClassesPage() {
       setLoading(false);
     }
   };
-  const filteredAssignments = assignments.filter(assignment => assignment.subjects?.name.toLowerCase().includes(searchQuery.toLowerCase()) || assignment.classes?.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const relName = (rel: any): string => {
+    const v = Array.isArray(rel) ? rel[0] : rel;
+    return v?.name || '';
+  };
+  const q = searchQuery.toLowerCase();
+  const filteredAssignments = assignments.filter(
+    assignment =>
+      relName(assignment.subjects).toLowerCase().includes(q) ||
+      relName(assignment.classes).toLowerCase().includes(q)
+  );
   if (loading) {
     return <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />

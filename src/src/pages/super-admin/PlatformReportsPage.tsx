@@ -5,6 +5,7 @@ import { Download, FileText, TrendingUp, Users, Building2, DollarSign, Graduatio
 import { supabase } from '../../lib/supabaseClient';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Alert } from '../../components/ui/Alert';
+import { downloadCSV } from '../../utils/csvExport';
 export function PlatformReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +66,84 @@ export function PlatformReportsPage() {
       setLoading(false);
     }
   };
-  const exportReport = (type: string) => {
-    // Placeholder for export functionality
-    alert(`Exporting ${type} report... (Feature coming soon)`);
+  const [exporting, setExporting] = useState(false);
+
+  const exportReport = async (type: string) => {
+    try {
+      setExporting(true);
+      setError(null);
+      const date = new Date().toISOString().split('T')[0];
+
+      if (type === 'comprehensive') {
+        const rows = [
+          { Metric: 'Total Schools', Value: stats.totalSchools },
+          { Metric: 'Active Schools', Value: stats.activeSchools },
+          { Metric: 'Total Students', Value: stats.totalStudents },
+          { Metric: 'Total Teachers', Value: stats.totalTeachers },
+          { Metric: 'Total Admins', Value: stats.totalAdmins },
+          { Metric: 'Total Bursars', Value: stats.totalBursars },
+          { Metric: 'Total Payments', Value: stats.totalPayments },
+          { Metric: 'Total Revenue', Value: stats.totalRevenue },
+          { Metric: 'New Schools (30d)', Value: monthlyGrowth.schools },
+          { Metric: 'New Students (30d)', Value: monthlyGrowth.students },
+          { Metric: 'New Users (30d)', Value: monthlyGrowth.users },
+        ];
+        downloadCSV(rows, `platform_summary_${date}.csv`);
+        return;
+      }
+
+      if (type === 'schools') {
+        const { data } = await supabase.from('schools').select('name, approved, currency_code, grading_scale, created_at');
+        downloadCSV((data || []).map(s => ({
+          Name: s.name, Status: s.approved ? 'Approved' : 'Pending', Currency: s.currency_code,
+          'Grading Scale': s.grading_scale, Created: new Date(s.created_at).toLocaleDateString(),
+        })), `schools_${date}.csv`);
+        return;
+      }
+
+      if (type === 'users' || type === 'growth' || type === 'analytics') {
+        const { data } = await supabase.from('users').select('full_name, email, role, created_at, schools(name)');
+        downloadCSV((data || []).map((u: any) => ({
+          Name: u.full_name, Email: u.email, Role: u.role,
+          School: (Array.isArray(u.schools) ? u.schools[0] : u.schools)?.name || 'N/A',
+          Created: new Date(u.created_at).toLocaleDateString(),
+        })), `users_${date}.csv`);
+        return;
+      }
+
+      if (type === 'students') {
+        const { data } = await supabase.from('students').select('full_name, admission_number, created_at, schools(name), classes(name)');
+        downloadCSV((data || []).map((s: any) => ({
+          Name: s.full_name, 'Admission No': s.admission_number,
+          School: (Array.isArray(s.schools) ? s.schools[0] : s.schools)?.name || 'N/A',
+          Class: (Array.isArray(s.classes) ? s.classes[0] : s.classes)?.name || 'N/A',
+          Created: new Date(s.created_at).toLocaleDateString(),
+        })), `students_${date}.csv`);
+        return;
+      }
+
+      if (type === 'payments') {
+        // payments link to a school via the student, not directly.
+        const { data } = await supabase.from('payments').select('amount, date, method, students(full_name, schools(name))');
+        downloadCSV((data || []).map((p: any) => {
+          const student = Array.isArray(p.students) ? p.students[0] : p.students;
+          const school = student && (Array.isArray(student.schools) ? student.schools[0] : student.schools);
+          return {
+            Amount: p.amount,
+            Method: p.method,
+            Student: student?.full_name || 'N/A',
+            School: school?.name || 'N/A',
+            Date: p.date ? new Date(p.date).toLocaleDateString() : 'N/A',
+          };
+        }), `payments_${date}.csv`);
+        return;
+      }
+    } catch (err: any) {
+      console.error('Export failed:', err);
+      setError('Failed to export report. Please try again.');
+    } finally {
+      setExporting(false);
+    }
   };
   if (loading) {
     return <div className="flex items-center justify-center min-h-[400px]">

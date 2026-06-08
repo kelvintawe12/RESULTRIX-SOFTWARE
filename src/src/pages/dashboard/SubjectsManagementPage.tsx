@@ -733,9 +733,9 @@ This course provides foundational knowledge relevant to careers in related field
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Subject Type <span className="text-red-500">*</span>
               </label>
-              <Select value={formData.subject_type} onValueChange={(value: 'core' | 'elective') => setFormData({
+              <Select value={formData.subject_type} onValueChange={(value: string) => setFormData({
             ...formData,
-            subject_type: value
+            subject_type: value as 'core' | 'elective'
           })}>
                 <SelectTrigger>
                   <SelectValue />

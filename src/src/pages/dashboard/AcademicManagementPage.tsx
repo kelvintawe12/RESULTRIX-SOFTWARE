@@ -120,6 +120,8 @@ export function AcademicManagementPage() {
     }
   };
   const handleToggleAutoUpdate = async (enabled: boolean) => {
+    // Optimistically update the UI so the toggle is responsive.
+    setSchoolSettings((prev: any) => ({ ...prev, auto_update_periods: enabled }));
     try {
       const {
         error
@@ -127,14 +129,18 @@ export function AcademicManagementPage() {
         auto_update_periods: enabled
       }).eq('id', user?.school_id);
       if (error) throw error;
-      setSchoolSettings({
-        ...schoolSettings,
-        auto_update_periods: enabled
-      });
       setSuccess(`Auto-update ${enabled ? 'enabled' : 'disabled'} successfully`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update auto-update setting');
+      // Revert on failure (e.g. the column hasn't been migrated yet).
+      setSchoolSettings((prev: any) => ({ ...prev, auto_update_periods: !enabled }));
+      const missingColumn = /auto_update_periods/.test(err?.message || '') || err?.code === '42703' || err?.code === 'PGRST204';
+      setError(
+        missingColumn
+          ? 'Auto-update is not enabled on this database yet. Run the add-auto-update-periods.sql migration to enable it.'
+          : err.message || 'Failed to update auto-update setting'
+      );
+      setTimeout(() => setError(''), 6000);
     }
   };
   const handleSetCurrent = async (type: 'year' | 'term' | 'sequence', id: string, currentValue: boolean) => {

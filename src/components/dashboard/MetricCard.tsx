@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus, BoxIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, type LucideIcon } from 'lucide-react';
 interface MetricCardProps {
   title: string;
   value: string;
@@ -7,8 +7,8 @@ interface MetricCardProps {
     value: string;
     direction: 'up' | 'down' | 'neutral';
   };
-  icon: BoxIcon;
-  color?: 'blue' | 'green' | 'amber' | 'purple';
+  icon: LucideIcon;
+  color?: 'blue' | 'green' | 'amber' | 'purple' | 'emerald' | 'indigo' | 'red' | 'rose';
 }
 export function MetricCard({
   title,
@@ -21,7 +21,11 @@ export function MetricCard({
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-emerald-50 text-emerald-600',
     amber: 'bg-amber-50 text-amber-600',
-    purple: 'bg-indigo-50 text-indigo-600'
+    purple: 'bg-indigo-50 text-indigo-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    red: 'bg-rose-50 text-rose-600',
+    rose: 'bg-rose-50 text-rose-600'
   };
   const trendColors = {
     up: 'text-emerald-600',
