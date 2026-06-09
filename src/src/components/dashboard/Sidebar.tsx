@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types';
-import { LayoutDashboard, GraduationCap, Users, CreditCard, BookOpen, BarChart3, Settings, LogOut, School, CheckSquare, Globe, ClipboardCheck, Calendar, FileSpreadsheet, Building2, X, UserCog, DollarSign, Receipt, UserCheck, BookMarked, ClipboardList, UsersRound, FileEdit, Award, FileText, Layout, Download, Mail, Send, Megaphone, FolderOpen } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Users, CreditCard, BookOpen, BarChart3, Settings, LogOut, School, CheckSquare, Globe, ClipboardCheck, Calendar, FileSpreadsheet, Building2, X, UserCog, DollarSign, Receipt, UserCheck, BookMarked, ClipboardList, UsersRound, FileEdit, Award, FileText, Layout, Download, Mail, Send, Megaphone, FolderOpen, Layers, ArrowUpCircle } from 'lucide-react';
 interface SidebarProps {
   role?: UserRole;
   onClose?: () => void;
@@ -87,6 +87,14 @@ export function Sidebar({
           icon: GraduationCap,
           label: 'Students',
           path: '/dashboard/students'
+        }, {
+          icon: Layers,
+          label: 'Classes',
+          path: '/dashboard/classes'
+        }, {
+          icon: ArrowUpCircle,
+          label: 'Promotion',
+          path: '/dashboard/promotion'
         }, {
           icon: FolderOpen,
           label: 'Academic Records',

@@ -11,10 +11,12 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { AddStudentForm } from '../../components/forms/AddStudentForm';
 import { EditStudentForm } from '../../components/forms/EditStudentForm';
 import { BulkImportStudentsForm } from '../../components/forms/BulkImportStudentsForm';
+import { TransferStudentsForm } from '../../components/forms/TransferStudentsForm';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Eye, Edit, Trash2, Upload, Users, GraduationCap, DollarSign, TrendingUp, Filter, Download, X } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, Upload, Users, GraduationCap, DollarSign, TrendingUp, Filter, Download, X, ArrowRightLeft } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 export function StudentsPage() {
@@ -31,6 +33,9 @@ export function StudentsPage() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  // Bulk selection / transfer
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showTransfer, setShowTransfer] = useState(false);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('all');
@@ -181,7 +186,33 @@ export function StudentsPage() {
       value
     }));
   }, [students]);
+  // --- Bulk selection helpers ---
+  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every(s => selectedIds.has(s.id));
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => {
+      if (allFilteredSelected) {
+        const next = new Set(prev);
+        filteredStudents.forEach(s => next.delete(s.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredStudents.forEach(s => next.add(s.id));
+      return next;
+    });
+  };
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   const columns = [{
+    header: '',
+    accessor: 'select' as const,
+    className: 'w-12',
+    render: (row: any) => <Checkbox checked={selectedIds.has(row.id)} onChange={() => toggleSelectOne(row.id)} />
+  }, {
     header: 'Student Info',
     accessor: 'full_name' as const,
     render: (row: any) => <div>
@@ -247,6 +278,9 @@ export function StudentsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {selectedIds.size > 0 && <Button variant="secondary" onClick={() => setShowTransfer(true)} leftIcon={<ArrowRightLeft className="w-4 h-4" />}>
+            Move {selectedIds.size} to Class
+          </Button>}
           <Button variant="secondary" onClick={() => setShowBulkImport(true)} leftIcon={<Upload className="w-4 h-4" />}>
             Bulk Import
           </Button>
@@ -377,6 +411,12 @@ export function StudentsPage() {
         </div>
 
         {filteredStudents.length > 0 ? <div className="p-0">
+            <div className="px-4 py-2 border-b border-slate-200 bg-white">
+              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer w-fit">
+                <Checkbox checked={allFilteredSelected} onChange={toggleSelectAll} />
+                {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
+              </label>
+            </div>
             <Table data={filteredStudents} columns={columns} />
             <div className="p-4 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
               <span>
@@ -416,5 +456,10 @@ export function StudentsPage() {
     }} onSuccess={fetchStudents} studentId={editingStudentId} />}
 
       <BulkImportStudentsForm isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onSuccess={fetchStudents} />
+
+      <TransferStudentsForm isOpen={showTransfer} onClose={() => setShowTransfer(false)} onSuccess={() => {
+      setSelectedIds(new Set());
+      fetchStudents();
+    }} studentIds={Array.from(selectedIds)} />
     </div>;
 }

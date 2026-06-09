@@ -65,6 +65,9 @@ import { EmailCommunicationPage } from './pages/dashboard/EmailCommunicationPage
 import { AnnouncementsPage } from './pages/dashboard/AnnouncementsPage';
 import { SubjectsManagementPage } from './pages/dashboard/SubjectsManagementPage';
 import { AuditLogsPage } from './pages/dashboard/AuditLogsPage';
+import { ClassesPage } from './pages/dashboard/ClassesPage';
+import { ClassRosterPage } from './pages/dashboard/ClassRosterPage';
+import { StudentPromotionPage } from './pages/dashboard/StudentPromotionPage';
 // Super Admin Pages
 import { SuperAdminDashboard } from './pages/super-admin/SuperAdminDashboard';
 import { SchoolApprovalPage } from './pages/super-admin/SchoolApprovalPage';
@@ -198,6 +201,27 @@ function App() {
                 <RoleGuard allowedRoles={['school_admin']}>
                   <DashboardLayout role="school_admin">
                     <StudentAcademicRecordsPage />
+                  </DashboardLayout>
+                </RoleGuard>
+              </ProtectedRoute>} />
+          <Route path="/dashboard/classes" element={<ProtectedRoute>
+                <RoleGuard allowedRoles={['school_admin']}>
+                  <DashboardLayout role="school_admin">
+                    <ClassesPage />
+                  </DashboardLayout>
+                </RoleGuard>
+              </ProtectedRoute>} />
+          <Route path="/dashboard/classes/:id" element={<ProtectedRoute>
+                <RoleGuard allowedRoles={['school_admin']}>
+                  <DashboardLayout role="school_admin">
+                    <ClassRosterPage />
+                  </DashboardLayout>
+                </RoleGuard>
+              </ProtectedRoute>} />
+          <Route path="/dashboard/promotion" element={<ProtectedRoute>
+                <RoleGuard allowedRoles={['school_admin']}>
+                  <DashboardLayout role="school_admin">
+                    <StudentPromotionPage />
                   </DashboardLayout>
                 </RoleGuard>
               </ProtectedRoute>} />
