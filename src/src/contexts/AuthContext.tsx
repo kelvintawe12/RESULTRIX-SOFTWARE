@@ -57,13 +57,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
-        // Fast timeout to prevent any hanging
+        // Very fast timeout to prevent any hanging
         initializationTimeout = setTimeout(() => {
           if (isMounted && loading) {
             console.warn('Auth initialization timeout - forcing loading state to false');
             setLoading(false);
           }
-        }, 5000); // 5 second timeout
+        }, 2000); // Reduced to 2 seconds
 
         // Simply check for existing session - don't fetch profile yet
         const currentSession = await supabase.auth.getSession();
@@ -74,12 +74,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setSession(currentSession.data.session);
 
-        // Don't fetch user profile during init - let it happen lazily
-        // or through the auth state change listener
+        // If we have a session, fetch user profile with timeout
+        if (currentSession.data.session?.user?.id) {
+          try {
+            const userProfile = await Promise.race([
+              authService.getUserProfile(currentSession.data.session.user.id),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+              )
+            ]);
+            if (isMounted) {
+              setUser(userProfile);
+            }
+          } catch (profileError) {
+            console.error('Error fetching user profile during init:', profileError);
+            // Don't fail initialization, just set user to null
+            if (isMounted) {
+              setUser(null);
+            }
+          }
+        }
       } catch (err) {
         console.error('Auth initialization error:', err);
         if (!isMounted) return;
         setSession(null);
+        setUser(null);
       } finally {
         clearTimeout(initializationTimeout);
         if (isMounted) {
@@ -90,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
 
-    // Set up periodic session health check (every 15 minutes, increased from 5)
+    // Set up periodic session health check (every 15 minutes)
     healthCheckInterval = setInterval(async () => {
       if (!isMounted) return;
       
@@ -106,14 +125,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
               setUser(null);
               setSession(null);
               clearAuthData();
-              // Don't navigate here to avoid redirects during health check
             }
           }
         }
       } catch (error) {
         console.error('Session health check error:', error);
       }
-    }, 15 * 60 * 1000); // 15 minutes (increased from 5)
+    }, 15 * 60 * 1000);
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -123,10 +141,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(session);
 
         if (event === 'SIGNED_IN' && session?.user?.id) {
-          // Only fetch profile if we don't already have a user
-          if (!user) {
+          // Only fetch profile if we don't already have a user with matching ID
+          if (!user || user.id !== session.user.id) {
             try {
-              const userProfile = await authService.getUserProfile(session.user.id);
+              const userProfile = await Promise.race([
+                authService.getUserProfile(session.user.id),
+                new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+                )
+              ]);
               if (!isMounted) return;
               setUser(userProfile);
               navigateByRole(userProfile.role);
@@ -192,11 +215,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
 
-      const result = await authService.login({
-        email,
-        password,
-        rememberMe
-      });
+      // Add timeout to prevent hanging
+      const result = await Promise.race([
+        authService.login({
+          email,
+          password,
+          rememberMe
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Login timeout - please try again')), 10000)
+        )
+      ]);
 
       // Set user and session from login result
       setUser(result.user);

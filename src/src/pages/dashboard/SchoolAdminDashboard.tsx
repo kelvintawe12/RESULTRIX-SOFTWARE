@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Users, GraduationCap, CreditCard, AlertCircle, Download, TrendingUp, TrendingDown, BookOpen, DollarSign, UserCheck, Calendar, ArrowRight } from 'lucide-react';
+import { Users, GraduationCap, CreditCard, AlertCircle, Download, TrendingUp, TrendingDown, BookOpen, DollarSign, UserCheck, Calendar, ArrowRight, Keyboard } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
@@ -43,6 +43,50 @@ export function SchoolAdminDashboard() {
       fetchDashboardData();
     }
   }, [user?.school_id]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Ctrl/Cmd + K: Open keyboard shortcuts help
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        alert('Keyboard Shortcuts:\n\nS: Students\nT: Teachers\nF: Fees\nA: Academics\nR: Reports\nD: Dashboard\nEsc: Close dialogs');
+      }
+
+      // Single key shortcuts
+      switch (e.key.toLowerCase()) {
+        case 's':
+          navigate('/dashboard/students');
+          break;
+        case 't':
+          navigate('/dashboard/teachers');
+          break;
+        case 'f':
+          navigate('/dashboard/fees');
+          break;
+        case 'a':
+          navigate('/dashboard/academics');
+          break;
+        case 'r':
+          navigate('/dashboard/reports');
+          break;
+        case 'd':
+          navigate('/dashboard');
+          break;
+        case 'escape':
+          // Close any open modals or dialogs
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -174,32 +218,37 @@ export function SchoolAdminDashboard() {
         <Alert variant="error" title="Error" message={error} />
       </div>;
   }
-  return <div className="space-y-6 p-6 bg-gray-50/50 min-h-screen">
+  return <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-gray-50/50 dark:bg-gray-900/50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">School Dashboard</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">School Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">
             Welcome back, {user?.full_name?.split(' ')[0]} 👋
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate('/dashboard/reports')} leftIcon={<Calendar className="h-4 w-4" />}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => {
+            alert('Keyboard Shortcuts:\n\nS: Students\nT: Teachers\nF: Fees\nA: Academics\nR: Reports\nD: Dashboard\nCtrl/Cmd + K: Show this help');
+          }} leftIcon={<Keyboard className="h-4 w-4" />} className="text-xs sm:text-sm">
+            Shortcuts
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/dashboard/reports')} leftIcon={<Calendar className="h-4 w-4" />} className="text-xs sm:text-sm">
             View Reports
           </Button>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <Card className="group border-l-4 border-l-blue-500 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-900/20">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                   Total Students
                 </p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2 group-hover:text-blue-600 transition-colors">
                   {stats.totalStudents}
                 </h3>
                 <div className="flex items-center gap-1 mt-2">
@@ -208,20 +257,30 @@ export function SchoolAdminDashboard() {
                     Active
                   </span>
                 </div>
+                {/* Progress indicator */}
+                <div className="mt-3 hidden sm:block">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Enrollment Rate</span>
+                    <span>85%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: '85%' }}></div>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <GraduationCap className="h-8 w-8 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-300 ml-2">
+                <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+        <Card className="group border-l-4 border-l-purple-500 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-800 dark:to-purple-900/20">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Teachers</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Teachers</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2 group-hover:text-purple-600 transition-colors">
                   {stats.totalTeachers}
                 </h3>
                 <div className="flex items-center gap-1 mt-2">
@@ -230,22 +289,32 @@ export function SchoolAdminDashboard() {
                     Staff
                   </span>
                 </div>
+                {/* Progress indicator */}
+                <div className="mt-3 hidden sm:block">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Teacher-Student Ratio</span>
+                    <span>1:20</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-500" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-purple-50 rounded-xl">
-                <Users className="h-8 w-8 text-purple-600" />
+              <div className="p-2 sm:p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl group-hover:bg-purple-600 group-hover:scale-110 transition-all duration-300 ml-2">
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 dark:text-purple-400 group-hover:text-white transition-colors" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+        <Card className="group border-l-4 border-l-green-500 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-green-50/30 dark:from-gray-800 dark:to-green-900/20">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                   Revenue Collected
                 </p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2 group-hover:text-green-600 transition-colors">
                   {formatCurrency(stats.totalRevenue)}
                 </h3>
                 <div className="flex items-center gap-1 mt-2">
@@ -254,22 +323,32 @@ export function SchoolAdminDashboard() {
                     {stats.collectionRate.toFixed(1)}% collected
                   </span>
                 </div>
+                {/* Progress indicator */}
+                <div className="mt-3 hidden sm:block">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Collection Rate</span>
+                    <span>{stats.collectionRate.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-green-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(stats.collectionRate, 100)}%` }}></div>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-green-50 rounded-xl">
-                <CreditCard className="h-8 w-8 text-green-600" />
+              <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/30 rounded-xl group-hover:bg-green-600 group-hover:scale-110 transition-all duration-300 ml-2">
+                <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 dark:text-green-400 group-hover:text-white transition-colors" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-amber-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+        <Card className="group border-l-4 border-l-amber-500 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-amber-50/30 dark:from-gray-800 dark:to-amber-900/20">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                   Pending Fees
                 </p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2 group-hover:text-amber-600 transition-colors">
                   {formatCurrency(stats.pendingFees)}
                 </h3>
                 <div className="flex items-center gap-1 mt-2">
@@ -278,9 +357,19 @@ export function SchoolAdminDashboard() {
                     Outstanding
                   </span>
                 </div>
+                {/* Progress indicator */}
+                <div className="mt-3 hidden sm:block">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Outstanding Rate</span>
+                    <span>{(100 - stats.collectionRate).toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-amber-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.max(0, 100 - stats.collectionRate)}%` }}></div>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-amber-50 rounded-xl">
-                <DollarSign className="h-8 w-8 text-amber-600" />
+              <div className="p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl group-hover:bg-amber-600 group-hover:scale-110 transition-all duration-300 ml-2">
+                <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600 dark:text-amber-400 group-hover:text-white transition-colors" />
               </div>
             </div>
           </CardContent>
@@ -288,27 +377,27 @@ export function SchoolAdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle className="text-lg font-semibold dark:text-white">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/dashboard/students')}>
-              <GraduationCap className="h-6 w-6" />
-              <span>Manage Students</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <Button variant="outline" className="h-auto py-3 sm:py-4 flex-col gap-2 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => navigate('/dashboard/students')}>
+              <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Manage Students</span>
             </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/dashboard/teachers')}>
-              <Users className="h-6 w-6" />
-              <span>Manage Teachers</span>
+            <Button variant="outline" className="h-auto py-3 sm:py-4 flex-col gap-2 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => navigate('/dashboard/teachers')}>
+              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Manage Teachers</span>
             </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/dashboard/academics')}>
-              <BookOpen className="h-6 w-6" />
-              <span>Academics</span>
+            <Button variant="outline" className="h-auto py-3 sm:py-4 flex-col gap-2 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => navigate('/dashboard/academics')}>
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Academics</span>
             </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/dashboard/fees')}>
-              <CreditCard className="h-6 w-6" />
-              <span>Fee Management</span>
+            <Button variant="outline" className="h-auto py-3 sm:py-4 flex-col gap-2 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => navigate('/dashboard/fees')}>
+              <CreditCard className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-xs sm:text-sm">Fee Management</span>
             </Button>
           </div>
         </CardContent>
@@ -317,25 +406,54 @@ export function SchoolAdminDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Fee Collection Trend */}
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Fee Collection Trend</CardTitle>
+            <CardTitle className="text-lg font-semibold dark:text-white">Fee Collection Trend</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={feesTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <LineChart data={feesTrend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis dataKey="month" tick={{
-                  fill: '#6B7280'
-                }} />
+                  fill: '#6B7280',
+                  fontSize: 12
+                }} className="text-gray-600 dark:text-gray-400" />
                   <YAxis tick={{
-                  fill: '#6B7280'
-                }} />
-                  <Tooltip />
+                  fill: '#6B7280',
+                  fontSize: 12
+                }} className="text-gray-600 dark:text-gray-400" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value) => [formatCurrency(Number(value)), '']}
+                  />
                   <Legend />
-                  <Line type="monotone" dataKey="collected" stroke="#10B981" strokeWidth={2} name="Collected" />
-                  <Line type="monotone" dataKey="expected" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" name="Expected" />
+                  <Line 
+                    type="monotone" 
+                    dataKey="collected" 
+                    stroke="#10B981" 
+                    strokeWidth={3} 
+                    name="Collected" 
+                    dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                    animationDuration={1000}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="expected" 
+                    stroke="#3B82F6" 
+                    strokeWidth={3} 
+                    strokeDasharray="5 5" 
+                    name="Expected" 
+                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 2 }}
+                    animationDuration={1000}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -343,24 +461,49 @@ export function SchoolAdminDashboard() {
         </Card>
 
         {/* Class Distribution */}
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Student Distribution by Class</CardTitle>
+            <CardTitle className="text-lg font-semibold dark:text-white">Student Distribution by Class</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               {classDistribution.length > 0 ? <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={classDistribution} cx="50%" cy="50%" labelLine={false} label={({
+                  <PieChart margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <Pie 
+                      data={classDistribution} 
+                      cx="50%" 
+                      cy="50%" 
+                      labelLine={false} 
+                      label={({
                   name,
                   percent
-                }) => `${name} (${(percent * 100).toFixed(0)}%)`} outerRadius={80} fill="#8884d8" dataKey="value">
-                      {classDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                }) => `${name} (${(percent * 100).toFixed(0)}%)`} 
+                      outerRadius={80} 
+                      fill="#8884d8" 
+                      dataKey="value"
+                      animationDuration={1000}
+                    >
+                      {classDistribution.map((entry, index) => <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]} 
+                        className="hover:opacity-80 transition-opacity"
+                      />)}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
                   </PieChart>
-                </ResponsiveContainer> : <div className="flex items-center justify-center h-full text-gray-500">
-                  No class data available
+                </ResponsiveContainer> : <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                    <GraduationCap className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <p className="text-sm font-medium">No class data available</p>
+                  <p className="text-xs text-gray-400 mt-1">Add classes to see distribution</p>
                 </div>}
             </div>
           </CardContent>
@@ -370,34 +513,34 @@ export function SchoolAdminDashboard() {
       {/* Export Section & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Export Data */}
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Export Data</CardTitle>
+            <CardTitle className="text-lg font-semibold dark:text-white">Export Data</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-between" onClick={() => exportStudents(students)} disabled={students.length === 0}>
+              <Button variant="outline" className="w-full justify-between dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => exportStudents(students)} disabled={students.length === 0}>
                 <span className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4" />
                   Export Students ({students.length})
                 </span>
                 <Download className="h-4 w-4" />
               </Button>
-              <Button variant="outline" className="w-full justify-between" onClick={() => exportTeachers(teachers)} disabled={teachers.length === 0}>
+              <Button variant="outline" className="w-full justify-between dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => exportTeachers(teachers)} disabled={teachers.length === 0}>
                 <span className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Export Teachers ({teachers.length})
                 </span>
                 <Download className="h-4 w-4" />
               </Button>
-              <Button variant="outline" className="w-full justify-between" onClick={() => exportBursars(bursars)} disabled={bursars.length === 0}>
+              <Button variant="outline" className="w-full justify-between dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => exportBursars(bursars)} disabled={bursars.length === 0}>
                 <span className="flex items-center gap-2">
                   <UserCheck className="h-4 w-4" />
                   Export Bursars ({bursars.length})
                 </span>
                 <Download className="h-4 w-4" />
               </Button>
-              <Button variant="outline" className="w-full justify-between" onClick={() => exportPayments(payments)} disabled={payments.length === 0}>
+              <Button variant="outline" className="w-full justify-between dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white" onClick={() => exportPayments(payments)} disabled={payments.length === 0}>
                 <span className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   Export Payments ({payments.length})
@@ -409,35 +552,45 @@ export function SchoolAdminDashboard() {
         </Card>
 
         {/* Recent Activity */}
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Recent Activity</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/payments')}>
+              <CardTitle className="text-lg font-semibold dark:text-white">Recent Activity</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/payments')} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30">
                 View All <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.length > 0 ? recentActivities.map(activity => <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <CreditCard className="h-4 w-4 text-green-600" />
+              {recentActivities.length > 0 ? recentActivities.map((activity, index) => <div key={activity.id} className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-lg hover:from-blue-50 hover:to-blue-100/50 dark:hover:from-blue-900/30 dark:hover:to-blue-900/20 transition-all duration-300 border border-transparent hover:border-blue-200 dark:hover:border-blue-700">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-300">
+                          <CreditCard className="h-5 w-5 text-white" />
+                        </div>
+                        {index === 0 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                           {activity.description}
                         </p>
-                        <p className="text-xs text-gray-500">{activity.date}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></span>
+                          {activity.date}
+                        </p>
                       </div>
                     </div>
-                    <Badge variant="success">
+                    <Badge variant="success" className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-sm group-hover:shadow-md transition-all">
                       {formatCurrency(activity.amount)}
                     </Badge>
-                  </div>) : <div className="text-center py-8 text-gray-500">
-                  No recent activity
-                </div>}
+                  </div>) : <div className="text-center py-12 text-gray-500 dark:text-gray-400 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                      <CreditCard className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <p className="text-sm font-medium">No recent activity</p>
+                    <p className="text-xs text-gray-400 mt-1">Payments will appear here</p>
+                  </div>}
             </div>
           </CardContent>
         </Card>

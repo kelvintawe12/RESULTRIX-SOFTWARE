@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Mail, ChevronDown, Menu, User, Settings, LogOut, Shield, Building2 } from 'lucide-react';
+import { Search, Mail, ChevronDown, Menu, User, Settings, LogOut, Shield, Building2, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { Badge } from '../ui/Badge';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { useTheme } from '../../contexts/ThemeContext';
 interface HeaderProps {
   onMenuClick?: () => void;
 }
@@ -18,6 +19,7 @@ export function Header({
     role,
     signOut
   } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showMessages, setShowMessages] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<any>(null);
@@ -108,6 +110,11 @@ export function Header({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Dark Mode Toggle */}
+        <button onClick={toggleTheme} className="relative p-2 text-slate-500 hover:bg-slate-100 hover:text-blue-600 rounded-full transition-colors dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-yellow-400">
+          {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+        </button>
+
         {/* Messages */}
         <div className="relative" ref={messagesRef}>
           <button onClick={() => {

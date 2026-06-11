@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { RoleGuard } from './routes/RoleGuard';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -154,11 +155,12 @@ function App() {
   }, [daemonsInitialized]);
 
   return <Router>
-      <ToastProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <PWAInstallPrompt />
-            <Routes>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <PWAInstallPrompt />
+              <Routes>
           {/* Public Routes */}
           <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
           <Route path="/features" element={<PublicLayout><FeaturesPage /></PublicLayout>} />
@@ -711,9 +713,10 @@ function App() {
               </ProtectedRoute>} />
 
         </Routes>
-          </NotificationProvider>
-        </AuthProvider>
-      </ToastProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </Router>;
 }
 export default App;

@@ -79,13 +79,27 @@ export function AddTeacherModal({ isOpen, onClose, onSuccess }: AddTeacherModalP
   const validateForm = () => {
     const errors: string[] = [];
 
-    if (!formData.full_name.trim()) errors.push('Full name is required');
-    if (!formData.email.trim()) errors.push('Email is required');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email)) errors.push('Invalid email format');
-    if (!formData.phone.trim()) errors.push('Phone number is required');
-    if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, ''))) errors.push('Phone must have at least 10 digits');
-    if (formData.experience_years < 0) errors.push('Experience cannot be negative');
-    if (formData.employment_status === 'full_time' && formData.salary && formData.salary <= 0) {
+    if (!formData.full_name.trim()) {
+      errors.push('Full name is required');
+    }
+    
+    if (!formData.email.trim()) {
+      errors.push('Email is required');
+    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email.trim())) {
+      errors.push('Invalid email format');
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.push('Phone number is required');
+    } else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, ''))) {
+      errors.push('Phone must have at least 10 digits');
+    }
+    
+    if (formData.experience_years < 0) {
+      errors.push('Experience cannot be negative');
+    }
+    
+    if (formData.employment_status === 'full_time' && formData.salary !== undefined && formData.salary !== null && formData.salary <= 0) {
       errors.push('Salary must be greater than 0');
     }
 
@@ -125,10 +139,13 @@ export function AddTeacherModal({ isOpen, onClose, onSuccess }: AddTeacherModalP
       if (signUpError) throw signUpError;
       if (!authData.user?.id) throw new Error('Failed to create user account');
 
+      // Store user ID for use in subsequent operations
+      const userId = authData.user.id;
+
       // Insert into users table
       const { error: userInsertError } = await supabase.from('users').insert([
         {
-          id: authData.user.id,
+          id: userId,
           email: formData.email.toLowerCase(),
           full_name: formData.full_name.trim(),
           phone: formData.phone.trim(),
@@ -143,7 +160,7 @@ export function AddTeacherModal({ isOpen, onClose, onSuccess }: AddTeacherModalP
       // Insert into teacher_profiles table
       const { error: profileError } = await supabase.from('teacher_profiles').insert([
         {
-          user_id: authData.user.id,
+          user_id: userId,
           school_id: user?.school_id,
           qualification: formData.qualification.trim() || null,
           experience_years: formData.experience_years,
@@ -159,7 +176,7 @@ export function AddTeacherModal({ isOpen, onClose, onSuccess }: AddTeacherModalP
       if (selectedSubjects.length > 0) {
         const { error: assignError } = await supabase.from('teacher_subjects').insert(
           selectedSubjects.map(subject_id => ({
-            teacher_id: authData.user.id,
+            teacher_id: userId,
             subject_id
           }))
         );
@@ -173,7 +190,7 @@ export function AddTeacherModal({ isOpen, onClose, onSuccess }: AddTeacherModalP
           school_id: user?.school_id,
           action: 'TEACHER_CREATED',
           entity_type: 'teacher',
-          entity_id: authData.user.id,
+          entity_id: userId,
           details: {
             name: formData.full_name,
             email: formData.email,
@@ -316,7 +333,6 @@ export function AddTeacherModal({ isOpen, onClose, onSuccess }: AddTeacherModalP
               value={formData.bio || ''}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               placeholder="Brief professional bio (optional)"
-              leftIcon={<FileText className="w-4 h-4" />}
               isTextarea
               rows={3}
             />

@@ -8,11 +8,20 @@ import {
   Shield,
   Globe,
   Smartphone,
-  Truck,
-  Star,
   Zap,
   Clock,
-  Bell
+  Bell,
+  BookOpen,
+  Award,
+  Briefcase,
+  TrendingUp,
+  Lock,
+  Headphones,
+  Settings,
+  Database,
+  MessageSquare,
+  PieChart,
+  GitBranch
 } from 'lucide-react';
 
 const stats = [
@@ -34,7 +43,7 @@ const heroFeatures = [
     description: 'Real-time performance tracking and detailed progress reports'
   },
   {
-    icon: Truck,
+    icon: Briefcase,
     title: 'Financial Management',
     description: 'Automated billing, payment tracking, and financial reporting'
   },
@@ -55,26 +64,85 @@ const heroFeatures = [
   }
 ];
 
+const additionalFeatures = [
+  {
+    icon: BookOpen,
+    title: 'Curriculum Management',
+    description: 'Organize subjects, lessons, and learning materials in one place'
+  },
+  {
+    icon: Award,
+    title: 'Grading System',
+    description: 'Flexible grading scales, automated calculations, and progress tracking'
+  },
+  {
+    icon: Clock,
+    title: 'Attendance Tracking',
+    description: 'Real-time attendance monitoring with automated reporting'
+  },
+  {
+    icon: MessageSquare,
+    title: 'Parent Portal',
+    description: 'Keep parents informed with real-time updates and two-way communication'
+  },
+  {
+    icon: PieChart,
+    title: 'Custom Reports',
+    description: 'Generate comprehensive reports tailored to your school needs'
+  },
+  {
+    icon: Database,
+    title: 'Data Integration',
+    description: 'Seamless integration with existing systems and data migration support'
+  }
+];
+
+const keyBenefits = [
+  {
+    title: 'Save Time',
+    description: 'Automate administrative tasks and reduce paperwork by up to 70%'
+  },
+  {
+    title: 'Improve Communication',
+    description: 'Connect teachers, parents, and administrators in real-time'
+  },
+  {
+    title: 'Boost Performance',
+    description: 'Data-driven insights to help improve student outcomes'
+  },
+  {
+    title: 'Reduce Costs',
+    description: 'Eliminate manual processes and reduce operational overhead'
+  }
+];
+
 const testimonials = [
   {
     name: 'Dr. James Wilson',
     role: 'Principal, Central High School',
-    image: '👨‍💼',
+    initials: 'JW',
     content: 'EduMaster transformed how we manage our school. Operations that took days now take minutes.',
     rating: 5
   },
   {
     name: 'Sarah Johnson',
     role: 'Bursar, St. Mary Academy',
-    image: '👩‍💼',
+    initials: 'SJ',
     content: 'The financial management features are incredible. Billing is now automated and error-free.',
     rating: 5
   },
   {
     name: 'Prof. Michael Chen',
     role: 'Academic Director, University College',
-    image: '👨‍🏫',
+    initials: 'MC',
     content: 'The analytics dashboard gives us insights we never had before. Student performance tracking is seamless.',
+    rating: 5
+  },
+  {
+    name: 'Emily Rodriguez',
+    role: 'IT Director, St. Joseph School',
+    initials: 'ER',
+    content: 'Implementation was smooth and the support team was exceptional. Highly recommended.',
     rating: 5
   }
 ];
@@ -90,7 +158,8 @@ const pricingPlans = [
       'Basic reporting',
       'Email support',
       'Mobile app access',
-      '1 administrator'
+      '1 administrator',
+      'Attendance tracking'
     ],
     cta: 'Get Started',
     highlighted: false
@@ -107,7 +176,8 @@ const pricingPlans = [
       'Mobile app access',
       '5 administrators',
       'Custom reports',
-      'API access'
+      'API access',
+      'Parent portal'
     ],
     cta: 'Start Free Trial',
     highlighted: true
@@ -132,10 +202,39 @@ const pricingPlans = [
   }
 ];
 
+const faqItems = [
+  {
+    question: 'How long does implementation take?',
+    answer: 'Our standard implementation takes 2-4 weeks depending on your school size and data complexity. We provide full support throughout the process.'
+  },
+  {
+    question: 'Can I migrate my existing data?',
+    answer: 'Yes, we offer comprehensive data migration services. Our team will ensure all your existing student records, grades, and financial data are safely transferred.'
+  },
+  {
+    question: 'What training is provided?',
+    answer: 'We provide comprehensive training for all staff members including administrators, teachers, and support staff. Training includes online sessions and detailed documentation.'
+  },
+  {
+    question: 'Is customer support available?',
+    answer: 'Professional and Enterprise plans include priority email support and dedicated account management. We also offer phone support for critical issues.'
+  },
+  {
+    question: 'What about data security?',
+    answer: 'Your data is protected with military-grade encryption, regular backups, and compliance with GDPR and local data protection regulations.'
+  },
+  {
+    question: 'Can I customize the system?',
+    answer: 'Yes, Enterprise plans include customization options. We can tailor workflows, reports, and features to match your specific requirements.'
+  }
+];
+
 export function LandingPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const [openFAQ, setOpenFAQ] = React.useState<number | null>(null);
 
   return (
     <div className="min-h-screen bg-white">
@@ -151,7 +250,7 @@ export function LandingPage() {
         <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <div className="inline-flex items-center gap-2 bg-blue-500/20 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border border-blue-400/50 mb-4 sm:mb-8">
             <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
-            <span className="text-[10px] sm:text-xs md:text-sm font-medium text-blue-300">Now Available • Live in 150+ Schools</span>
+            <span className="text-[10px] sm:text-xs md:text-sm font-medium text-blue-300">Now Available - Live in 150+ Schools</span>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-7xl font-bold text-white mb-3 sm:mb-6 leading-tight">
             Manage Your School
@@ -195,6 +294,10 @@ export function LandingPage() {
       {/* Hero Features Grid */}
       <section className="py-12 sm:py-16 md:py-32 bg-white">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="mb-12 sm:mb-16 md:mb-20 text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Core Features</h2>
+            <p className="text-sm sm:text-base md:text-lg text-slate-600">Everything you need to manage your school efficiently</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {heroFeatures.map((feature, index) => {
               const Icon = feature.icon;
@@ -212,21 +315,72 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Additional Features Section */}
+      <section className="py-12 sm:py-16 md:py-32 bg-slate-50">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="mb-12 sm:mb-16 md:mb-20 text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Extended Capabilities</h2>
+            <p className="text-sm sm:text-base md:text-lg text-slate-600">Comprehensive tools to streamline every aspect of school management</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            {additionalFeatures.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div key={index} className="p-4 sm:p-6 lg:p-8 rounded-xl bg-white border border-slate-200 hover:shadow-lg transition-all">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-3 sm:mb-4">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-indigo-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-slate-900 mb-1.5 sm:mb-2">{feature.title}</h3>
+                  <p className="text-xs sm:text-sm lg:text-base text-slate-600">{feature.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Key Benefits Section */}
       <section className="py-12 sm:py-16 md:py-32 bg-white">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="mb-12 sm:mb-16 md:mb-20 text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Why Choose EduMaster</h2>
+            <p className="text-sm sm:text-base md:text-lg text-slate-600">Transform your school operations with measurable results</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
+            {keyBenefits.map((benefit, index) => (
+              <div key={index} className="flex gap-4 sm:gap-6">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-green-100">
+                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-slate-900 mb-2">{benefit.title}</h3>
+                  <p className="text-sm sm:text-base text-slate-600">{benefit.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-12 sm:py-16 md:py-32 bg-slate-50">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Loved by Schools Worldwide</h2>
             <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto">
-              Join hundreds of schools that trust EduMaster for their management needs
+              Join hundreds of schools already using EduMaster for their management needs
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="p-4 sm:p-6 lg:p-8 rounded-xl bg-slate-50 border border-slate-200">
+              <div key={index} className="p-4 sm:p-6 lg:p-8 rounded-xl bg-white border border-slate-200">
                 <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4">
-                  <div className="text-2xl sm:text-3xl lg:text-4xl">{testimonial.image}</div>
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm sm:text-base">{testimonial.initials}</span>
+                  </div>
                   <div>
                     <p className="font-semibold text-slate-900 text-xs sm:text-sm lg:text-base">{testimonial.name}</p>
                     <p className="text-[10px] sm:text-xs md:text-sm text-slate-600">{testimonial.role}</p>
@@ -234,7 +388,9 @@ export function LandingPage() {
                 </div>
                 <div className="flex gap-1 mb-3 sm:mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+                    <svg key={i} className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
                   ))}
                 </div>
                 <p className="text-slate-600 italic text-xs sm:text-sm lg:text-base">"{testimonial.content}"</p>
@@ -245,7 +401,7 @@ export function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-12 sm:py-16 md:py-32 bg-slate-50">
+      <section className="py-12 sm:py-16 md:py-32 bg-white">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
@@ -297,6 +453,42 @@ export function LandingPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-12 sm:py-16 md:py-32 bg-slate-50">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
+            <p className="text-sm sm:text-base md:text-lg text-slate-600">Find answers to common questions about EduMaster</p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4">
+            {faqItems.map((item, index) => (
+              <div key={index} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                <button
+                  onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <span className="font-semibold text-sm sm:text-base md:text-lg text-slate-900">{item.question}</span>
+                  <svg
+                    className={`w-5 h-5 text-slate-600 transition-transform ${openFAQ === index ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </button>
+                {openFAQ === index && (
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 bg-slate-50">
+                    <p className="text-sm sm:text-base text-slate-600">{item.answer}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

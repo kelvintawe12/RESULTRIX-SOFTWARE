@@ -65,24 +65,40 @@ class AuthService {
     session: Session;
   }> {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email.toLowerCase(),
-        password: credentials.password
-      });
+      // Add timeout to prevent hanging
+      const { data, error } = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email: credentials.email.toLowerCase(),
+          password: credentials.password
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Authentication timeout')), 8000)
+        )
+      ]) as { data: any, error: any };
 
       if (error) throw error;
       if (!data.user || !data.session) throw new Error('Login failed');
 
-      // Get user profile
-      const userProfile = await this.getUserProfile(data.user.id);
+      // Get user profile with timeout
+      const userProfile = await Promise.race([
+        this.getUserProfile(data.user.id),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        )
+      ]);
       
       // Check if school is approved
       if (userProfile.role === 'school_admin') {
-        const { data: schoolData } = await supabase
-          .from('schools')
-          .select('approved')
-          .eq('id', userProfile.school_id)
-          .single();
+        const { data: schoolData } = await Promise.race([
+          supabase
+            .from('schools')
+            .select('approved')
+            .eq('id', userProfile.school_id)
+            .single(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('School check timeout')), 3000)
+          )
+        ]);
         
         if (schoolData && !schoolData.approved) {
           await supabase.auth.signOut();
@@ -90,8 +106,10 @@ class AuthService {
         }
       }
 
-      // Update last login
-      await this.updateLastLogin(data.user.id);
+      // Update last login (fire and forget, don't await)
+      this.updateLastLogin(data.user.id).catch(err => {
+        console.error('Failed to update last login:', err);
+      });
 
       // Store remember me preference
       if (credentials.rememberMe) {
@@ -238,11 +256,16 @@ class AuthService {
    */
   async getUserProfile(userId: string): Promise<AuthUser> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data, error } = await Promise.race([
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 5000)
+        )
+      ]) as { data: any, error: any };
 
       if (error) throw error;
       if (!data) throw new Error('User not found');
