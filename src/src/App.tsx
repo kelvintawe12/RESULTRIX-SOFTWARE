@@ -1,10 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { RoleGuard } from './routes/RoleGuard';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { PublicLayout } from './components/layout/PublicLayout';
 import { PWAInstallPrompt } from './components/common/PWAInstallPrompt';
+import { daemonService } from './services/daemonService';
 // Public Pages
 import { LandingPage } from './pages/LandingPage';
 import { FeaturesPage } from './pages/public/FeaturesPage';
@@ -107,13 +111,17 @@ import { TeacherReportsPage } from './pages/teacher/TeacherReportsPage';
 import { TeacherSchedulePage } from './pages/teacher/TeacherSchedulePage';
 import { ProfilePage } from './pages/common/ProfilePage';
 import { SettingsPage } from './pages/common/SettingsPage';
+import { UnauthorizedPage } from './pages/common/UnauthorizedPage';
 import { useAuth } from './hooks/useAuth';
+
+
 // Wrapper components for common routes that need role detection
 function ProfilePageWrapper() {
   const {
     user
   } = useAuth();
-  const role = user?.role || 'teacher';
+  // DashboardLayout expects UserRole; auth may contain other values.
+  const role = (user?.role || 'teacher') as any;
   return <DashboardLayout role={role}>
       <ProfilePage />
     </DashboardLayout>;
@@ -122,49 +130,68 @@ function SettingsPageWrapper() {
   const {
     user
   } = useAuth();
-  const role = user?.role || 'teacher';
+  const role = (user?.role || 'teacher') as any;
   return <DashboardLayout role={role}>
       <SettingsPage />
     </DashboardLayout>;
 }
 function App() {
+  // Initialize daemon service on mount (only once)
+  const [daemonsInitialized, setDaemonsInitialized] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (!daemonsInitialized) {
+      console.log('Initializing daemon service...');
+      const daemonInfo = daemonService.getAllDaemonInfo();
+      console.log('Daemons initialized:', daemonInfo);
+      setDaemonsInitialized(true);
+    }
+    
+    return () => {
+      console.log('Stopping daemon service...');
+      daemonService.stopAll();
+    };
+  }, [daemonsInitialized]);
+
   return <Router>
-      <AuthProvider>
-        <PWAInstallPrompt />
-        <Routes>
+      <ToastProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <PWAInstallPrompt />
+            <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/resources" element={<ResourcesPage />} />
-          <Route path="/security" element={<SecurityPage />} />
+          <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
+          <Route path="/features" element={<PublicLayout><FeaturesPage /></PublicLayout>} />
+          <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
+          <Route path="/about" element={<PublicLayout><AboutPage /></PublicLayout>} />
+          <Route path="/contact" element={<PublicLayout><ContactPage /></PublicLayout>} />
+          <Route path="/resources" element={<PublicLayout><ResourcesPage /></PublicLayout>} />
+          <Route path="/security" element={<PublicLayout><SecurityPage /></PublicLayout>} />
 
           {/* New Public Pages */}
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/case-studies" element={<CaseStudiesPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/demo" element={<DemoPage />} />
-          <Route path="/status" element={<StatusPage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
-          <Route path="/roadmap" element={<RoadmapPage />} />
-          <Route path="/changelog" element={<ChangelogPage />} />
-          <Route path="/partners" element={<PartnersPage />} />
-          <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/faq" element={<PublicLayout><FAQPage /></PublicLayout>} />
+          <Route path="/case-studies" element={<PublicLayout><CaseStudiesPage /></PublicLayout>} />
+          <Route path="/blog" element={<PublicLayout><BlogPage /></PublicLayout>} />
+          <Route path="/demo" element={<PublicLayout><DemoPage /></PublicLayout>} />
+          <Route path="/status" element={<PublicLayout><StatusPage /></PublicLayout>} />
+          <Route path="/integrations" element={<PublicLayout><IntegrationsPage /></PublicLayout>} />
+          <Route path="/roadmap" element={<PublicLayout><RoadmapPage /></PublicLayout>} />
+          <Route path="/changelog" element={<PublicLayout><ChangelogPage /></PublicLayout>} />
+          <Route path="/partners" element={<PublicLayout><PartnersPage /></PublicLayout>} />
+          <Route path="/tools" element={<PublicLayout><ToolsPage /></PublicLayout>} />
 
           {/* Solutions Routes */}
-          <Route path="/solutions/schools" element={<SchoolsPage />} />
-          <Route path="/solutions/universities" element={<UniversitiesPage />} />
-          <Route path="/solutions/districts" element={<DistrictsPage />} />
+          <Route path="/solutions/schools" element={<PublicLayout><SchoolsPage /></PublicLayout>} />
+          <Route path="/solutions/universities" element={<PublicLayout><UniversitiesPage /></PublicLayout>} />
+          <Route path="/solutions/districts" element={<PublicLayout><DistrictsPage /></PublicLayout>} />
 
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="/privacy-policy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
+          <Route path="/terms-of-service" element={<PublicLayout><TermsOfServicePage /></PublicLayout>} />
 
           {/* School Admin Routes */}
           <Route path="/dashboard" element={<ProtectedRoute>
@@ -675,14 +702,18 @@ function App() {
               </ProtectedRoute>} />
 
           {/* Common Routes */}
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/profile" element={<ProtectedRoute>
                 <ProfilePageWrapper />
               </ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute>
                 <SettingsPageWrapper />
               </ProtectedRoute>} />
+
         </Routes>
-      </AuthProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ToastProvider>
     </Router>;
 }
 export default App;

@@ -1,6 +1,5 @@
 import React, { Children } from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Card } from '../../components/ui/Card';
 import { Shield, Lock, Database, Eye, Key, Server, CheckCircle } from 'lucide-react';
 const features = [{
@@ -30,11 +29,11 @@ const features = [{
 }];
 const compliances = ['GDPR Compliant', 'FERPA Compliant', 'SOC 2 Type II', 'ISO 27001 Certified'];
 export function SecurityPage() {
-  return <PublicLayout>
+  return <>
       {/* Hero */}
       <section className="bg-slate-900 text-white py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/40 via-transparent to-transparent"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 text-center">
           <motion.div initial={{
           opacity: 0,
           scale: 0.95
@@ -60,7 +59,7 @@ export function SecurityPage() {
 
       {/* Features */}
       <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <motion.div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8" initial="hidden" whileInView="visible" viewport={{
           once: true
         }} variants={{
@@ -104,7 +103,7 @@ export function SecurityPage() {
 
       {/* Compliance */}
       <section className="py-20 bg-slate-50 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-12">
             Compliance Standards
           </h2>
@@ -142,5 +141,5 @@ export function SecurityPage() {
           </div>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

@@ -1,8 +1,6 @@
-import React, { Children } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
 import { BookOpen, FileText, Video, ArrowRight } from 'lucide-react';
 const categories = ['All Resources', 'Getting Started', 'Best Practices', 'Platform Updates'];
 const resources = [{
@@ -61,10 +59,11 @@ const resources = [{
   description: 'Ensure you have everything wrapped up correctly before the break.'
 }];
 export function ResourcesPage() {
-  return <PublicLayout>
+  return (
+      <>
       {/* Categories */}
       <section className="border-b border-slate-200 bg-white sticky top-16 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="flex overflow-x-auto py-4 space-x-8 no-scrollbar">
             {categories.map((cat, index) => <button key={index} className={`whitespace-nowrap text-sm font-medium transition-colors ${index === 0 ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : 'text-slate-600 hover:text-blue-600'}`}>
                 {cat}
@@ -75,7 +74,7 @@ export function ResourcesPage() {
 
       {/* Grid */}
       <section className="py-16 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <motion.div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8" initial="hidden" whileInView="visible" viewport={{
           once: true
         }} variants={{
@@ -124,5 +123,6 @@ export function ResourcesPage() {
           </motion.div>
         </div>
       </section>
-    </PublicLayout>;
+      </>
+  );
 }

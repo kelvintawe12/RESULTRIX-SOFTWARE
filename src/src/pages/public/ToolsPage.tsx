@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -35,10 +34,10 @@ export function ToolsPage() {
     if (ratioNum < 15) assessment = 'Excellent';else if (ratioNum < 20) assessment = 'Good';else if (ratioNum < 25) assessment = 'Acceptable';else assessment = 'Needs Improvement';
     setRatioResult(`${ratio}:1 (${assessment})`);
   };
-  return <PublicLayout>
+  return <>
       {/* Hero Section */}
       <section className="bg-slate-900 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -60,7 +59,7 @@ export function ToolsPage() {
 
       {/* Tools Grid */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Fee Calculator */}
             <motion.div initial={{
@@ -233,7 +232,7 @@ export function ToolsPage() {
 
       {/* Free Templates Section */}
       <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
               Free Templates
@@ -300,7 +299,7 @@ export function ToolsPage() {
 
       {/* CTA Section */}
       <section className="py-20 bg-indigo-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-3xl font-bold mb-4">Need More Powerful Tools?</h2>
           <p className="text-xl text-indigo-100 mb-8">
             Get access to advanced analytics, automated workflows, and
@@ -316,5 +315,5 @@ export function ToolsPage() {
           </div>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

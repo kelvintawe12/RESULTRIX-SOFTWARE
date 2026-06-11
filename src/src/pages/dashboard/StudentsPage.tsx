@@ -1,465 +1,408 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table } from '../../components/ui/Table';
+import { Plus, Search, Filter, Download, Upload, Eye, Edit, Trash2, MoreVertical, Users, TrendingUp, DollarSign, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Select } from '../../components/ui/Select';
-import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
-import { MetricCard } from '../../components/dashboard/MetricCard';
-import { Alert } from '../../components/ui/Alert';
+import { Input } from '../../components/ui/Input';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { AddStudentForm } from '../../components/forms/AddStudentForm';
-import { EditStudentForm } from '../../components/forms/EditStudentForm';
-import { BulkImportStudentsForm } from '../../components/forms/BulkImportStudentsForm';
-import { TransferStudentsForm } from '../../components/forms/TransferStudentsForm';
-import { Checkbox } from '../../components/ui/Checkbox';
-import { supabase } from '../../lib/supabaseClient';
+import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Eye, Edit, Trash2, Upload, Users, GraduationCap, DollarSign, TrendingUp, Filter, Download, X, ArrowRightLeft } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+import { studentService, Student, StudentFilter, StudentStats } from '../../services/studentService';
+import { MetricCard } from '../../components/dashboard/MetricCard';
+
+interface StudentRowProps {
+  student: Student;
+  onEdit: (student: Student) => void;
+  onDelete: (student: Student) => void;
+  onView: (student: Student) => void;
+}
+
+function StudentRow({ student, onEdit, onDelete, onView }: StudentRowProps) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  const statusColor = {
+    active: 'success',
+    inactive: 'warning',
+    transferred: 'secondary',
+    graduated: 'info'
+  }[student.status] as any;
+
+  return (
+    <tr className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+      <td className="px-6 py-4">
+        <div>
+          <div className="font-medium text-slate-900">
+            {student.first_name} {student.last_name}
+          </div>
+          <div className="text-sm text-slate-500">{student.admission_number}</div>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="text-sm text-slate-600">{student.email}</div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="text-sm text-slate-600">{student.phone}</div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="text-sm text-slate-600">{student.guardian_name}</div>
+      </td>
+      <td className="px-6 py-4">
+        <Badge variant={statusColor}>{student.status}</Badge>
+      </td>
+      <td className="px-6 py-4">
+        <div className="text-sm font-medium text-slate-900">
+          ${student.total_paid.toLocaleString()}
+        </div>
+      </td>
+      <td className="px-6 py-4 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onView(student)}
+            leftIcon={<Eye className="w-4 h-4" />}
+          >
+            View
+          </Button>
+          <div className="relative group">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <MoreVertical className="w-4 h-4 text-slate-500" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
+                <button
+                  onClick={() => {
+                    onEdit(student);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+                >
+                  <Edit className="w-4 h-4" /> Edit
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(student);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-red-600 rounded-b-lg"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export function StudentsPage() {
-  const {
-    user
-  } = useAuth();
-  const navigate = useNavigate();
-  const [students, setStudents] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [stats, setStats] = useState<StudentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currencyCode, setCurrencyCode] = useState('USD');
-  // Modal States
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showBulkImport, setShowBulkImport] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
-  // Bulk selection / transfer
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showTransfer, setShowTransfer] = useState(false);
-  // Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState('all');
-  const [selectedGender, setSelectedGender] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [filters, setFilters] = useState<StudentFilter>({});
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+
   useEffect(() => {
     if (user?.school_id) {
       fetchStudents();
+      fetchStats();
     }
   }, [user?.school_id]);
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      // Fetch school currency
-      const {
-        data: schoolData
-      } = await supabase.from('schools').select('currency_code').eq('id', user?.school_id).single();
-      setCurrencyCode(schoolData?.currency_code || 'USD');
-      const {
-        data,
-        error
-      } = await supabase.from('students').select(`
-          *,
-          classes (
-            id,
-            name
-          )
-        `).eq('school_id', user?.school_id).order('created_at', {
-        ascending: false
+      setError(null);
+
+      if (!user?.school_id) return;
+
+      const result = await studentService.getStudents(user.school_id, {
+        ...filters,
+        searchQuery,
+        status: statusFilter !== 'all' ? statusFilter : undefined
       });
-      if (error) throw error;
-      setStudents(data || []);
+
+      setStudents(result.students);
     } catch (err: any) {
-      setError('Failed to fetch students');
-      console.error(err);
+      setError(err.message || 'Failed to load students');
     } finally {
       setLoading(false);
     }
   };
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this student?')) return;
+
+  const fetchStats = async () => {
     try {
-      const {
-        error
-      } = await supabase.from('students').delete().eq('id', id);
-      if (error) throw error;
-      setStudents(students.filter(s => s.id !== id));
+      if (!user?.school_id) return;
+      const studentStats = await studentService.getStudentStats(user.school_id);
+      setStats(studentStats);
+    } catch (err) {
+      console.error('Failed to load statistics:', err);
+    }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+  };
+
+  const handleDelete = async (student: Student) => {
+    if (!confirm(`Are you sure you want to delete ${student.first_name} ${student.last_name}?`)) {
+      return;
+    }
+
+    try {
+      await studentService.deleteStudent(student.id, user?.school_id!);
+      setStudents(students.filter(s => s.id !== student.id));
+      setError(null);
     } catch (err: any) {
-      console.error('Error deleting student:', err);
-      alert('Failed to delete student');
+      setError(err.message || 'Failed to delete student');
     }
   };
-  // --- Derived Data & Stats ---
-  const uniqueClasses = useMemo(() => {
-    const classes = new Set(students.map(s => s.classes?.name).filter(Boolean));
-    return Array.from(classes).sort();
-  }, [students]);
+
+  const handleExport = async () => {
+    try {
+      const csv = await studentService.exportStudentsToCSV(user?.school_id!, students);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `students_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    } catch (err: any) {
+      setError(err.message || 'Failed to export');
+    }
+  };
+
   const filteredStudents = useMemo(() => {
-    return students.filter(student => {
-      const matchesSearch = student.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || student.admission_number?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesClass = selectedClass === 'all' || student.classes?.name === selectedClass;
-      const matchesGender = selectedGender === 'all' || student.gender === selectedGender;
-      let matchesStatus = true;
-      if (selectedStatus === 'paid') matchesStatus = student.remaining <= 0;
-      if (selectedStatus === 'partial') matchesStatus = student.total_paid > 0 && student.remaining > 0;
-      if (selectedStatus === 'unpaid') matchesStatus = student.total_paid === 0;
-      return matchesSearch && matchesClass && matchesGender && matchesStatus;
-    });
-  }, [students, searchQuery, selectedClass, selectedGender, selectedStatus]);
-  const stats = useMemo(() => {
-    const total = students.length;
-    const paid = students.filter(s => s.remaining <= 0).length;
-    const outstanding = students.reduce((acc, s) => acc + (Number(s.remaining) || 0), 0);
-    const totalRevenue = students.reduce((acc, s) => acc + (Number(s.total_paid) || 0), 0);
-    return {
-      total,
-      paid,
-      outstanding,
-      totalRevenue
-    };
-  }, [students]);
-  // --- Chart Data Preparation ---
-  const classDistributionData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    students.forEach(s => {
-      const className = s.classes?.name || 'Unassigned';
-      counts[className] = (counts[className] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, value]) => ({
-      name,
-      value
-    })).sort((a, b) => b.value - a.value).slice(0, 10); // Top 10 classes
-  }, [students]);
-  const genderData = useMemo(() => {
-    const counts: Record<string, number> = {
-      Male: 0,
-      Female: 0,
-      Other: 0
-    };
-    students.forEach(s => {
-      if (s.gender === 'male') counts.Male++;else if (s.gender === 'female') counts.Female++;else counts.Other++;
-    });
-    return Object.entries(counts).filter(([_, value]) => value > 0).map(([name, value]) => ({
-      name,
-      value
-    }));
-  }, [students]);
-  const paymentStatusData = useMemo(() => {
-    let paid = 0,
-      partial = 0,
-      unpaid = 0;
-    students.forEach(s => {
-      if (s.remaining <= 0) paid++;else if (s.total_paid > 0) partial++;else unpaid++;
-    });
-    return [{
-      name: 'Fully Paid',
-      value: paid
-    }, {
-      name: 'Partial',
-      value: partial
-    }, {
-      name: 'Unpaid',
-      value: unpaid
-    }].filter(d => d.value > 0);
-  }, [students]);
-  const ageData = useMemo(() => {
-    const ranges = {
-      '< 12': 0,
-      '12-14': 0,
-      '15-17': 0,
-      '18+': 0
-    };
-    students.forEach(s => {
-      if (!s.date_of_birth) return;
-      const age = new Date().getFullYear() - new Date(s.date_of_birth).getFullYear();
-      if (age < 12) ranges['< 12']++;else if (age <= 14) ranges['12-14']++;else if (age <= 17) ranges['15-17']++;else ranges['18+']++;
-    });
-    return Object.entries(ranges).map(([name, value]) => ({
-      name,
-      value
-    }));
-  }, [students]);
-  // --- Bulk selection helpers ---
-  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every(s => selectedIds.has(s.id));
-  const toggleSelectAll = () => {
-    setSelectedIds(prev => {
-      if (allFilteredSelected) {
-        const next = new Set(prev);
-        filteredStudents.forEach(s => next.delete(s.id));
-        return next;
-      }
-      const next = new Set(prev);
-      filteredStudents.forEach(s => next.add(s.id));
-      return next;
-    });
-  };
-  const toggleSelectOne = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-  const columns = [{
-    header: '',
-    accessor: 'select' as const,
-    className: 'w-12',
-    render: (row: any) => <Checkbox checked={selectedIds.has(row.id)} onChange={() => toggleSelectOne(row.id)} />
-  }, {
-    header: 'Student Info',
-    accessor: 'full_name' as const,
-    render: (row: any) => <div>
-          <div className="font-medium text-slate-900">{row.full_name}</div>
-          <div className="text-xs text-slate-500 font-mono">
-            {row.admission_number || 'No ID'}
-          </div>
-        </div>
-  }, {
-    header: 'Class',
-    accessor: 'classes' as const,
-    render: (row: any) => <Badge variant="secondary">{row.classes?.name || 'Unassigned'}</Badge>
-  }, {
-    header: 'Gender',
-    accessor: 'gender' as const,
-    render: (row: any) => <span className="capitalize text-slate-600">{row.gender}</span>
-  }, {
-    header: 'Status',
-    accessor: 'remaining' as const,
-    render: (row: any) => {
-      const isPaid = row.remaining <= 0;
-      const isPartial = row.total_paid > 0 && row.remaining > 0;
-      return <Badge variant={isPaid ? 'success' : isPartial ? 'warning' : 'secondary'}>
-            {isPaid ? 'Paid' : isPartial ? 'Partial' : 'Unpaid'}
-          </Badge>;
-    }
-  }, {
-    header: 'Balance',
-    accessor: 'remaining' as const,
-    render: (row: any) => <span className={`font-medium ${row.remaining > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-          {formatCurrency(Number(row.remaining))}
-        </span>
-  }, {
-    header: 'Actions',
-    accessor: 'id' as const,
-    render: (row: any) => <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={() => navigate(`/dashboard/students/${row.id}`)} leftIcon={<Eye className="w-4 h-4" />}>
-            View
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => {
-        setEditingStudentId(row.id);
-        setShowEditForm(true);
-      }} leftIcon={<Edit className="w-4 h-4" />}>
-            Edit
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDelete(row.id)} leftIcon={<Trash2 className="w-4 h-4" />}>
-            Delete
-          </Button>
-        </div>
-  }];
+    return students.filter(s =>
+      (s.first_name.toLowerCase() + s.last_name.toLowerCase()).includes(searchQuery.toLowerCase()) ||
+      s.admission_number.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [students, searchQuery]);
+
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[400px]">
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
-      </div>;
+      </div>
+    );
   }
-  return <div className="space-y-8">
+
+  return (
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Students</h1>
-          <p className="text-slate-500 mt-1">
-            Manage enrollments, profiles, and performance.
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">Students</h1>
+          <p className="text-slate-500 mt-1">Manage and monitor all student records</p>
         </div>
-        <div className="flex gap-2">
-          {selectedIds.size > 0 && <Button variant="secondary" onClick={() => setShowTransfer(true)} leftIcon={<ArrowRightLeft className="w-4 h-4" />}>
-            Move {selectedIds.size} to Class
-          </Button>}
-          <Button variant="secondary" onClick={() => setShowBulkImport(true)} leftIcon={<Upload className="w-4 h-4" />}>
-            Bulk Import
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={handleExport} leftIcon={<Download className="w-4 h-4" />}>
+            Export
           </Button>
-          <Button variant="primary" onClick={() => setShowAddForm(true)} leftIcon={<Plus className="w-4 h-4" />}>
+          <Button variant="secondary" onClick={fetchStudents} leftIcon={<RefreshCw className="w-4 h-4" />}>
+            Refresh
+          </Button>
+          <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
             Add Student
           </Button>
         </div>
       </div>
 
-      {error && <Alert variant="error" title="Error" message={error} />}
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          variant="error"
+          title="Error"
+          message={error}
+          action={<Button size="sm" variant="secondary" onClick={() => setError(null)}>Dismiss</Button>}
+        />
+      )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Total Students" value={stats.total.toLocaleString()} icon={Users} color="blue" trend={{
-        value: 'Active',
-        direction: 'neutral'
-      }} />
-        <MetricCard title="Fully Paid" value={stats.paid.toLocaleString()} icon={GraduationCap} color="green" trend={{
-        value: `${Math.round(stats.paid / (stats.total || 1) * 100)}%`,
-        direction: 'up'
-      }} />
-        <MetricCard title="Outstanding Fees" value={formatCurrency(stats.outstanding)} icon={DollarSign} color="amber" trend={{
-        value: 'Pending',
-        direction: 'down'
-      }} />
-        <MetricCard title="Total Revenue" value={formatCurrency(stats.totalRevenue)} icon={TrendingUp} color="purple" trend={{
-        value: 'Collected',
-        direction: 'up'
-      }} />
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Enrollment by Class" className="min-h-[350px]">
-          <div className="h-[300px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={classDistributionData} layout="vertical" margin={{
-              left: 20
-            }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={80} tick={{
-                fontSize: 12
-              }} />
-                <Tooltip cursor={{
-                fill: '#f1f5f9'
-              }} contentStyle={{
-                borderRadius: '8px',
-                border: 'none',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-              }} />
-                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Card title="Gender Distribution">
-            <div className="h-[250px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={genderData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {genderData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          <Card title="Payment Status">
-            <div className="h-[250px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={paymentStatusData} cx="50%" cy="50%" innerRadius={0} outerRadius={80} dataKey="value">
-                    {paymentStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.name === 'Fully Paid' ? '#10b981' : entry.name === 'Partial' ? '#f59e0b' : '#ef4444'} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <MetricCard
+            title="Total Students"
+            value={stats.total.toLocaleString()}
+            icon={Users}
+            color="blue"
+          />
+          <MetricCard
+            title="Active"
+            value={stats.active.toLocaleString()}
+            icon={TrendingUp}
+            color="green"
+          />
+          <MetricCard
+            title="Inactive"
+            value={stats.inactive}
+            icon={AlertCircle}
+            color="yellow"
+          />
+          <MetricCard
+            title="Total Paid"
+            value={`$${stats.totalPaid.toLocaleString()}`}
+            icon={DollarSign}
+            color="emerald"
+          />
+          <MetricCard
+            title="Total Owed"
+            value={`$${stats.totalOwed.toLocaleString()}`}
+            icon={DollarSign}
+            color="red"
+          />
         </div>
-      </div>
+      )}
 
-      {/* Filters & Table */}
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-slate-200 bg-slate-50/50">
-          <div className="flex flex-col lg:flex-row gap-4 justify-between">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input type="text" placeholder="Search by name or admission number..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="w-40 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="all">All Classes</option>
-                {uniqueClasses.map(c => <option key={c} value={c}>
-                    {c}
-                  </option>)}
-              </select>
-
-              <select value={selectedGender} onChange={e => setSelectedGender(e.target.value)} className="w-36 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="all">All Genders</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-
-              <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className="w-36 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="all">All Status</option>
-                <option value="paid">Paid</option>
-                <option value="partial">Partial</option>
-                <option value="unpaid">Unpaid</option>
-              </select>
-
-              {(searchQuery || selectedClass !== 'all' || selectedGender !== 'all' || selectedStatus !== 'all') && <Button variant="secondary" onClick={() => {
-              setSearchQuery('');
-              setSelectedClass('all');
-              setSelectedGender('all');
-              setSelectedStatus('all');
-            }} leftIcon={<X className="w-4 h-4" />}>
-                  Clear
-                </Button>}
-            </div>
+      {/* Filters and Search */}
+      <Card className="p-4 bg-slate-50 border-slate-200">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or admission number..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 bg-white">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-sm focus:outline-none bg-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="transferred">Transferred</option>
+              <option value="graduated">Graduated</option>
+            </select>
           </div>
         </div>
-
-        {filteredStudents.length > 0 ? <div className="p-0">
-            <div className="px-4 py-2 border-b border-slate-200 bg-white">
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer w-fit">
-                <Checkbox checked={allFilteredSelected} onChange={toggleSelectAll} />
-                {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
-              </label>
-            </div>
-            <Table data={filteredStudents} columns={columns} />
-            <div className="p-4 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
-              <span>
-                Showing {filteredStudents.length} of {students.length} students
-              </span>
-              <Button variant="secondary" size="sm" leftIcon={<Download className="w-3 h-3" />}>
-                Export CSV
-              </Button>
-            </div>
-          </div> : <div className="text-center py-16 px-6">
-            <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              No Students Found
-            </h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-              Try adjusting your filters or search query to find what you're
-              looking for.
-            </p>
-            <Button variant="secondary" onClick={() => {
-          setSearchQuery('');
-          setSelectedClass('all');
-          setSelectedGender('all');
-          setSelectedStatus('all');
-        }}>
-              Clear Filters
-            </Button>
-          </div>}
       </Card>
 
-      <AddStudentForm isOpen={showAddForm} onClose={() => setShowAddForm(false)} onSuccess={fetchStudents} />
+      {/* Students Table */}
+      <Card className="overflow-hidden">
+        {filteredStudents.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Student
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Guardian
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Paid
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map(student => (
+                  <StudentRow
+                    key={student.id}
+                    student={student}
+                    onEdit={() => setSelectedStudent(student)}
+                    onDelete={handleDelete}
+                    onView={() => setSelectedStudent(student)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No students found</h3>
+            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Try adjusting your search or filters'
+                : 'Get started by adding your first student'}
+            </p>
+            <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
+              Add Your First Student
+            </Button>
+          </div>
+        )}
+      </Card>
 
-      {editingStudentId && <EditStudentForm isOpen={showEditForm} onClose={() => {
-      setShowEditForm(false);
-      setEditingStudentId(null);
-    }} onSuccess={fetchStudents} studentId={editingStudentId} />}
-
-      <BulkImportStudentsForm isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onSuccess={fetchStudents} />
-
-      <TransferStudentsForm isOpen={showTransfer} onClose={() => setShowTransfer(false)} onSuccess={() => {
-      setSelectedIds(new Set());
-      fetchStudents();
-    }} studentIds={Array.from(selectedIds)} />
-    </div>;
+      {/* Student Detail Modal (Placeholder for now) */}
+      {selectedStudent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Student Details</h2>
+              <button
+                onClick={() => setSelectedStudent(null)}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-500">First Name</p>
+                  <p className="font-medium text-slate-900">{selectedStudent.first_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Last Name</p>
+                  <p className="font-medium text-slate-900">{selectedStudent.last_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Admission Number</p>
+                  <p className="font-medium text-slate-900">{selectedStudent.admission_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Email</p>
+                  <p className="font-medium text-slate-900">{selectedStudent.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Guardian</p>
+                  <p className="font-medium text-slate-900">{selectedStudent.guardian_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Status</p>
+                  <Badge variant="success">{selectedStudent.status}</Badge>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-6 border-t border-slate-200">
+                <Button variant="secondary" onClick={() => setSelectedStudent(null)}>
+                  Close
+                </Button>
+                <Button variant="primary">Edit Student</Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
 }

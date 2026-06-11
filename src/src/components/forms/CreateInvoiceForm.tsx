@@ -21,7 +21,6 @@ export function CreateInvoiceForm({
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [terms, setTerms] = useState<any[]>([]);
-  const [feeStructures, setFeeStructures] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     student_id: '',
     term_id: '',
@@ -39,9 +38,7 @@ export function CreateInvoiceForm({
     fetchTerms();
   }, []);
   useEffect(() => {
-    if (formData.student_id) {
-      fetchFeeStructure(formData.student_id);
-    }
+    // Removed fee structure fetching as it's not currently used
   }, [formData.student_id]);
   const fetchStudents = async () => {
     try {
@@ -78,31 +75,6 @@ export function CreateInvoiceForm({
       console.error('Error fetching terms:', err);
     }
   };
-  const fetchFeeStructure = async (studentId: string) => {
-    try {
-      const {
-        data: studentData,
-        error: studentError
-      } = await supabase.from('students').select('class_id').eq('id', studentId).single();
-      if (studentError) throw studentError;
-      const {
-        data,
-        error
-      } = await supabase.from('fee_structures').select('*').eq('class_id', studentData.class_id);
-      if (error) throw error;
-      setFeeStructures(data || []);
-      if (data && data.length > 0) {
-        setInvoiceItems(data.map((fee: any, index: number) => ({
-          id: String(index + 1),
-          description: fee.description || 'Tuition Fee',
-          amount: parseFloat(fee.amount),
-          fee_type: 'tuition'
-        })));
-      }
-    } catch (err) {
-      console.error('Error fetching fee structure:', err);
-    }
-  };
   const addInvoiceItem = () => {
     setInvoiceItems([...invoiceItems, {
       id: String(invoiceItems.length + 1),
@@ -131,13 +103,13 @@ export function CreateInvoiceForm({
     try {
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
       const totalAmount = calculateTotal();
-      // Create invoice record - using correct column names from schema
+      
+      // Create student fee invoice record using correct table
       const {
-        data: invoiceData,
         error: invoiceError
-      } = await supabase.from('invoices').insert({
-        subscription_id: null,
-        school_id: formData.student_id,
+      } = await supabase.from('student_fee_invoices').insert({
+        student_id: formData.student_id,
+        term_id: formData.term_id,
         invoice_number: invoiceNumber,
         amount_due: totalAmount,
         amount_paid: 0,
@@ -147,18 +119,21 @@ export function CreateInvoiceForm({
         period_start: formData.issue_date,
         period_end: formData.due_date,
         due_date: formData.due_date,
-        description: `Student fees for ${formData.term_id}`,
+        description: `Student fees for term ${formData.term_id}`,
         line_items: invoiceItems
       }).select().single();
+      
       if (invoiceError) throw invoiceError;
-      // Update student's total_fee
+
+      // Update student's total_fee (this will be kept in sync by triggers)
       const {
         error: studentError
       } = await supabase.from('students').update({
-        total_fee: totalAmount,
-        remaining: totalAmount
+        total_fee: totalAmount
       }).eq('id', formData.student_id);
+      
       if (studentError) throw studentError;
+
       alert('Invoice created successfully!');
       onSuccess();
       onClose();

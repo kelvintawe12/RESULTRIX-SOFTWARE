@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Sparkles, Bug, Wrench, Shield, Zap, Calendar } from 'lucide-react';
@@ -137,10 +136,10 @@ const getVersionBadge = (type: string) => {
   }
 };
 export function ChangelogPage() {
-  return <PublicLayout>
+  return <>
       {/* Hero Section */}
       <section className="bg-slate-900 text-white py-20">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -159,7 +158,7 @@ export function ChangelogPage() {
 
       {/* Releases Timeline */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="space-y-8">
             {releases.map((release, index) => <motion.div key={release.version} initial={{
             opacity: 0,
@@ -211,7 +210,7 @@ export function ChangelogPage() {
 
       {/* Subscribe CTA */}
       <section className="py-20 bg-white border-t border-slate-200">
-        <div className="max-w-3xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">
             Stay Updated
           </h2>
@@ -226,5 +225,5 @@ export function ChangelogPage() {
           </div>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

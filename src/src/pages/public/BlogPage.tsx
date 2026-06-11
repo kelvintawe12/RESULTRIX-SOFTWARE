@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Search, Calendar, Clock, ArrowRight } from 'lucide-react';
@@ -68,10 +67,10 @@ export function BlogPage() {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) || post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-  return <PublicLayout>
+  return <>
       {/* Content Section */}
       <section className="py-16 bg-slate-50 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           {/* Search Bar */}
           <div className="max-w-xl mx-auto relative mb-12">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
@@ -155,7 +154,7 @@ export function BlogPage() {
 
       {/* Newsletter CTA */}
       <section className="py-20 bg-white border-t border-slate-200">
-        <div className="max-w-3xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Subscribe to our newsletter
           </h2>
@@ -176,5 +175,5 @@ export function BlogPage() {
           </p>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

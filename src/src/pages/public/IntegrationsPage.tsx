@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CheckCircle, Zap, Globe, DollarSign, Mail, MessageSquare, CreditCard, Building2, Smartphone, Cloud } from 'lucide-react';
@@ -156,10 +155,10 @@ const integrations = [{
   }]
 }];
 export function IntegrationsPage() {
-  return <PublicLayout>
+  return <>
       {/* Hero Section */}
       <section className="bg-slate-900 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -186,7 +185,7 @@ export function IntegrationsPage() {
 
       {/* Integrations Grid */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="space-y-16">
             {integrations.map((category, categoryIndex) => <motion.div key={category.category} initial={{
             opacity: 0,
@@ -243,7 +242,7 @@ export function IntegrationsPage() {
 
       {/* API Access */}
       <section className="py-20 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Need a Custom Integration?
           </h2>
@@ -259,5 +258,5 @@ export function IntegrationsPage() {
           </div>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

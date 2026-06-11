@@ -1,6 +1,5 @@
 import React, { useState, Children } from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Button } from '../../components/ui/Button';
 import { CheckCircle, Clock, Lightbulb, Rocket, Calendar, Users, Smartphone, BarChart, MessageSquare, Video, ThumbsUp, Sparkles, Zap, TrendingUp, Send } from 'lucide-react';
 const roadmapItems = [{
@@ -194,10 +193,10 @@ export function RoadmapPage() {
     });
     setShowFeatureRequest(false);
   };
-  return <PublicLayout>
+  return <>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <motion.div className="text-center max-w-4xl mx-auto" initial="hidden" animate="visible" variants={fadeInUp}>
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-white/20">
               <Sparkles className="h-4 w-4" />
@@ -218,7 +217,7 @@ export function RoadmapPage() {
 
       {/* Filter Tabs */}
       <section className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {[{
@@ -255,7 +254,7 @@ export function RoadmapPage() {
 
       {/* Roadmap Timeline */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="space-y-16">
             {filteredRoadmap.map((quarter, index) => {
             const config = getStatusConfig(quarter.status);
@@ -320,7 +319,7 @@ export function RoadmapPage() {
 
       {/* Stats Section */}
       <section className="py-16 bg-white border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             {[{
             icon: Rocket,
@@ -429,7 +428,7 @@ export function RoadmapPage() {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <Zap className="h-12 w-12 mx-auto mb-6 text-yellow-300" />
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Want to Influence Our Roadmap?
@@ -442,5 +441,5 @@ export function RoadmapPage() {
           </Button>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

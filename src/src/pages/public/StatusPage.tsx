@@ -1,6 +1,5 @@
 import React, { useEffect, useState, Component } from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { CheckCircle, AlertCircle, XCircle, Activity, Database, Lock, HardDrive, Globe, Clock } from 'lucide-react';
 interface ComponentStatus {
   name: string;
@@ -76,10 +75,10 @@ export function StatusPage() {
     }
   };
   const overallStatus = components.every(c => c.status === 'operational') ? 'operational' : components.some(c => c.status === 'down') ? 'down' : 'degraded';
-  return <PublicLayout>
+  return <>
       {/* Hero Section */}
       <section className="bg-slate-900 text-white py-16">
-        <div className="max-w-5xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -99,7 +98,7 @@ export function StatusPage() {
 
       {/* Overall Status */}
       <section className="py-12 bg-slate-50">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -124,7 +123,7 @@ export function StatusPage() {
 
       {/* Component Status */}
       <section className="py-12 bg-white">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             Component Status
           </h2>
@@ -164,7 +163,7 @@ export function StatusPage() {
 
       {/* Uptime Statistics */}
       <section className="py-12 bg-slate-50">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             Uptime Statistics
           </h2>
@@ -193,7 +192,7 @@ export function StatusPage() {
 
       {/* Upcoming Maintenance */}
       <section className="py-12 bg-white">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             Upcoming Maintenance
           </h2>
@@ -225,7 +224,7 @@ export function StatusPage() {
 
       {/* Incident History */}
       <section className="py-12 bg-slate-50">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             Recent Incidents
           </h2>
@@ -252,7 +251,7 @@ export function StatusPage() {
 
       {/* Subscribe to Updates */}
       <section className="py-12 bg-white border-t border-slate-200">
-        <div className="max-w-3xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">
             Stay Informed
           </h2>
@@ -268,5 +267,5 @@ export function StatusPage() {
           </div>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

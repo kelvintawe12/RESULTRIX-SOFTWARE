@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -55,10 +54,10 @@ export function PartnersPage() {
     partnerType: '',
     message: ''
   });
-  return <PublicLayout>
+  return <>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-600 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -80,7 +79,7 @@ export function PartnersPage() {
 
       {/* Stats Section */}
       <section className="py-16 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             {[{
             value: '150+',
@@ -116,7 +115,7 @@ export function PartnersPage() {
 
       {/* Benefits Section */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
               Partner Benefits
@@ -157,7 +156,7 @@ export function PartnersPage() {
 
       {/* Partner Types */}
       <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
               Partnership Models
@@ -211,7 +210,7 @@ export function PartnersPage() {
 
       {/* Application Form */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-3xl mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
               Become a Partner
@@ -298,5 +297,5 @@ export function PartnersPage() {
           </Card>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

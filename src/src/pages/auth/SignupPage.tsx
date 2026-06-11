@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { AuthSlideshow } from '../../components/common/AuthSlideshow';
 import { School, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { initializeSubscriptionForSchool } from '../../lib/subscriptionHelper';
 export function SignupPage() {
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     schoolName: '',
@@ -14,17 +16,29 @@ export function SignupPage() {
     adminName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    phone: '',
+    currencyCode: 'USD',
+    gradingScale: 'percentage',
+    selectedPlanId: ''
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPendingMessage, setShowPendingMessage] = useState(false);
   const [registeredSchoolName, setRegisteredSchoolName] = useState('');
   const {
-    signup,
-    signInWithGoogle
+    signup
   } = useAuth();
-  const navigate = useNavigate();
+
+  // Check for pre-selected plan from navigation state
+  useEffect(() => {
+    if (location.state?.selectedPlanId) {
+      setFormData(prev => ({
+        ...prev,
+        selectedPlanId: location.state.selectedPlanId
+      }));
+    }
+  }, [location.state]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -51,7 +65,23 @@ export function SignupPage() {
     }
     setLoading(true);
     try {
-      await signup(formData.email, formData.password, formData.schoolName, formData.adminName);
+      const result = await signup({
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.adminName,
+        phone: formData.phone,
+        school_name: formData.schoolName,
+        currency_code: formData.currencyCode,
+        grading_scale: formData.gradingScale,
+        plan_id: formData.selectedPlanId || undefined
+      });
+
+      // Create subscription asynchronously after successful signup
+      if (formData.selectedPlanId) {
+        // Don't await this - let it happen in the background
+        initializeSubscriptionForSchool(result.school_id, formData.selectedPlanId);
+      }
+
       // Show pending approval message instead of redirecting
       setRegisteredSchoolName(formData.schoolName);
       setShowPendingMessage(true);
@@ -59,13 +89,6 @@ export function SignupPage() {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-  const handleGoogleSignUp = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up with Google');
     }
   };
   
@@ -220,8 +243,8 @@ export function SignupPage() {
             </div>}
 
           {step === 1 && <>
-              {/* Google Sign Up */}
-              <button onClick={handleGoogleSignUp} className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors mb-6">
+              {/* Google Sign Up - Temporarily disabled */}
+              <button disabled className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-300 rounded-lg bg-slate-100 cursor-not-allowed mb-6 opacity-50">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />

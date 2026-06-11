@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Mail, ChevronDown, Menu, User, Settings, LogOut, Shield, Building2 } from 'lucide-react';
+import { Search, Mail, ChevronDown, Menu, User, Settings, LogOut, Shield, Building2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { Badge } from '../ui/Badge';
+import { NotificationBell } from '../notifications/NotificationBell';
 interface HeaderProps {
   onMenuClick?: () => void;
 }
@@ -17,27 +18,19 @@ export function Header({
     role,
     signOut
   } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState<any>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const notificationsRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (user?.school_id) {
       fetchSchoolInfo();
-      fetchNotifications();
     }
   }, [user?.school_id]);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-        setShowNotifications(false);
-      }
       if (messagesRef.current && !messagesRef.current.contains(event.target as Node)) {
         setShowMessages(false);
       }
@@ -59,50 +52,6 @@ export function Header({
     } catch (err) {
       console.error('Error fetching school info:', err);
     }
-  };
-  const fetchNotifications = async () => {
-    try {
-      // Fetch role-specific notifications from audit logs
-      const {
-        data,
-        error
-      } = await supabase.from('audit_logs').select('*').eq('school_id', user?.school_id).order('timestamp', {
-        ascending: false
-      }).limit(10);
-      if (error) throw error;
-      const formattedNotifications = (data || []).map(log => ({
-        id: log.id,
-        title: getNotificationTitle(log.action_type),
-        message: getNotificationMessage(log.action_type, log.details),
-        time: new Date(log.timestamp).toLocaleString(),
-        read: false,
-        type: getNotificationType(log.action_type)
-      }));
-      setNotifications(formattedNotifications);
-      setUnreadNotifications(formattedNotifications.filter(n => !n.read).length);
-      setUnreadMessages(3); // Mock data - replace with actual message count
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-    }
-  };
-  const getNotificationTitle = (actionType: string) => {
-    const titles: Record<string, string> = {
-      mark_update: 'Marks Updated',
-      payment_recorded: 'Payment Received',
-      student_enrolled: 'New Student Enrolled',
-      report_computed: 'Report Generated'
-    };
-    return titles[actionType] || 'System Notification';
-  };
-  const getNotificationMessage = (actionType: string, details: any) => {
-    // Customize based on action type and details
-    return `Action: ${actionType}`;
-  };
-  const getNotificationType = (actionType: string) => {
-    if (actionType.includes('payment')) return 'success';
-    if (actionType.includes('mark')) return 'info';
-    if (actionType.includes('error')) return 'error';
-    return 'default';
   };
   const handleSignOut = async () => {
     await signOut();
@@ -163,7 +112,6 @@ export function Header({
         <div className="relative" ref={messagesRef}>
           <button onClick={() => {
           setShowMessages(!showMessages);
-          setShowNotifications(false);
           setShowProfile(false);
         }} className="relative p-2 text-slate-500 hover:bg-slate-100 hover:text-blue-600 rounded-full transition-colors">
             <Mail className="w-5 h-5" />
@@ -218,49 +166,7 @@ export function Header({
         </div>
 
         {/* Notifications */}
-        <div className="relative" ref={notificationsRef}>
-          <button onClick={() => {
-          setShowNotifications(!showNotifications);
-          setShowMessages(false);
-          setShowProfile(false);
-        }} className="relative p-2 text-slate-500 hover:bg-slate-100 hover:text-blue-600 rounded-full transition-colors">
-            <Bell className="w-5 h-5" />
-            {unreadNotifications > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white ring-1 ring-white"></span>}
-          </button>
-
-          {showNotifications && <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50">
-              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="font-semibold text-slate-900">Notifications</h3>
-                <Badge variant="error">{unreadNotifications} new</Badge>
-              </div>
-              <div className="max-h-96 overflow-y-auto">
-                {notifications.length > 0 ? notifications.map(notification => <div key={notification.id} className="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${notification.type === 'success' ? 'bg-green-500' : notification.type === 'error' ? 'bg-red-500' : notification.type === 'info' ? 'bg-blue-500' : 'bg-slate-400'}`}></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900">
-                            {notification.title}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {notification.time}
-                          </p>
-                        </div>
-                      </div>
-                    </div>) : <div className="px-4 py-8 text-center text-slate-500">
-                    <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                    <p className="text-sm">No notifications yet</p>
-                  </div>}
-              </div>
-              <div className="px-4 py-2 border-t border-slate-200">
-                <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                  View all notifications
-                </button>
-              </div>
-            </div>}
-        </div>
+        <NotificationBell />
 
         <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
@@ -268,7 +174,6 @@ export function Header({
         <div className="relative" ref={profileRef}>
           <button onClick={() => {
           setShowProfile(!showProfile);
-          setShowNotifications(false);
           setShowMessages(false);
         }} className="flex items-center gap-3 pl-2 hover:bg-slate-50 py-1.5 pr-3 rounded-lg transition-all duration-200 border border-transparent hover:border-slate-200">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${getRoleColor()}`}>

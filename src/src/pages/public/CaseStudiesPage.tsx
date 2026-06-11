@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { PublicLayout } from '../../components/layout/PublicLayout';
 import { Button } from '../../components/ui/Button';
 import { TrendingUp, Clock, CheckCircle, Quote, MapPin } from 'lucide-react';
 const caseStudies = [{
@@ -38,10 +37,10 @@ const caseStudies = [{
   role: 'Director of Studies'
 }];
 export function CaseStudiesPage() {
-  return <PublicLayout>
+  return <>
       {/* Case Studies List */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-24">
           {caseStudies.map((study, index) => <motion.div key={study.id} initial={{
           opacity: 0,
           y: 40
@@ -129,7 +128,7 @@ export function CaseStudiesPage() {
 
       {/* CTA Section */}
       <section className="py-20 bg-indigo-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to write your success story?
           </h2>
@@ -147,5 +146,5 @@ export function CaseStudiesPage() {
           </div>
         </div>
       </section>
-    </PublicLayout>;
+    </>;
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { School, Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -79,14 +79,12 @@ export function Navbar() {
     path: '/contact'
   }];
   return <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-transparent'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 p-1.5 rounded-lg group-hover:bg-blue-700 transition-colors shadow-md">
-              <School className="w-6 h-6 text-white" />
-            </div>
-            <span className={`font-bold text-xl tracking-tight transition-colors ${isScrolled ? 'text-slate-900' : 'text-white'}`}> 
+            <img src="/icons/icon-96x96.png" alt="EduMaster" className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg" />
+            <span className={'font-bold text-lg sm:text-xl tracking-tight transition-colors ' + (isScrolled ? 'text-slate-900' : 'text-white')}>
               EduMaster
             </span>
           </Link>
@@ -219,4 +217,3 @@ export function Navbar() {
         </div>}
     </nav>;
 }
-

@@ -1,17 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, Shield, GraduationCap } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, Shield } from 'lucide-react';
 export function Footer() {
   const currentYear = new Date().getFullYear();
   return <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8">
           {/* Brand Column */}
           <div className="space-y-6 lg:col-span-2">
             <div className="flex items-center space-x-2">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-white" />
-              </div>
+              <img src="/icons/icon-96x96.png" alt="EduMaster" className="w-8 h-8 sm:w-10 sm:h-10" />
               <span className="text-xl font-bold text-white">EduMaster</span>
             </div>
             <p className="text-sm leading-relaxed text-slate-400 max-w-xs">
